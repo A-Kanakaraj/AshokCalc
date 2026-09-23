@@ -1,0 +1,1928 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AshokCalc</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B2A4A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --paper:#EAF1EF;
+  --sheet:#F7FAF9;
+  --ink:#1B2A4A;
+  --ink-soft:#50607A;
+  --rule:#C5D4CF;
+  --teal:#3B7A72;
+  --teal-soft:#D3E6E1;
+  --crimson:#A8324A;
+  --focus:#2F6FDB;
+  --principal:var(--teal);
+  --interest:var(--crimson);
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1D23; --sheet:#152A31; --ink:#E4EDEF; --ink-soft:#9DB0B7; --rule:#2A424A;
+    --teal:#6DB3A8; --teal-soft:#1D3A3B; --crimson:#E0798B; --focus:#7FA8FF; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1D23; --sheet:#152A31; --ink:#E4EDEF; --ink-soft:#9DB0B7; --rule:#2A424A;
+  --teal:#6DB3A8; --teal-soft:#1D3A3B; --crimson:#E0798B; --focus:#7FA8FF; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+img,svg{max-width:100%}
+.wrap{max-width:1180px;margin:0 auto;padding:clamp(18px,3.2vw,44px) clamp(16px,3vw,40px) 56px}
+
+/* Header */
+.top{max-width:62ch;margin-bottom:clamp(20px,3vw,36px)}
+.top h1{font-family:var(--serif);font-weight:600;font-size:clamp(2.1rem,4.4vw,3.1rem);line-height:1.05;letter-spacing:-0.012em;margin:0 0 .4rem}
+.lede{margin:0;color:var(--ink-soft);font-size:1.02rem}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:clamp(20px,3vw,40px);align-items:start}
+@media (max-width:880px){.layout{grid-template-columns:minmax(0,1fr)}}
+
+/* Controls slip */
+.slip{position:relative;overflow:hidden;background:var(--sheet);border:1px solid var(--rule);border-radius:16px;padding:22px 22px 18px}
+@media (min-width:881px) and (min-height:780px){.slip{position:sticky;top:calc(env(safe-area-inset-top,0px) + 18px)}}
+.rosette{position:absolute;right:-138px;top:-138px;width:290px;height:290px;color:var(--teal);opacity:.22;pointer-events:none}
+.field{position:relative;margin:0 0 20px;padding:0;border:0;min-width:0}
+.field-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.field label,.field legend,.pair label{font-weight:600;font-size:.95rem}
+.field legend{padding:0;margin-bottom:8px}
+.num{display:flex;align-items:baseline;gap:6px;margin-left:auto;border-bottom:1.5px solid var(--ink);padding-bottom:2px}
+.num input,.num select{font:600 1.05rem/1.2 var(--sans);font-variant-numeric:tabular-nums;color:var(--ink);background:transparent;border:0;padding:2px 0;text-align:right}
+.num input{width:7.5ch}
+#principal{width:10.5ch}
+.num input:focus,.num select:focus{outline:none}
+.num:focus-within{border-bottom-color:var(--focus);box-shadow:0 1.5px 0 var(--focus)}
+.num select{text-align:left;font-weight:500;color:var(--ink-soft);cursor:pointer}
+.affix{color:var(--ink-soft);font-size:.92rem}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+input[type=range]{width:100%;margin:12px 0 2px;accent-color:var(--teal);height:22px;cursor:pointer}
+.hint{margin:2px 0 0;color:var(--ink-soft);font-size:.85rem;min-height:1.3em}
+.hint.warn{color:var(--crimson)}
+
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.seg input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.seg label{display:block;text-align:center;padding:8px 6px;border:1px solid var(--rule);border-radius:8px;font-weight:500;font-size:.92rem;cursor:pointer;background:transparent;color:var(--ink)}
+.seg input:checked + label{background:var(--ink);border-color:var(--ink);color:var(--sheet)}
+.seg input:focus-visible + label{outline:2px solid var(--focus);outline-offset:2px}
+
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.pair > div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pair input,.pair select{font:500 .95rem var(--sans);color:var(--ink);background:transparent;border:0;border-bottom:1.5px solid var(--ink);padding:4px 0;min-width:0;width:100%}
+.pair input:focus,.pair select:focus{outline:none;border-bottom-color:var(--focus);box-shadow:0 1.5px 0 var(--focus)}
+
+.btn{font:600 .9rem/1 var(--sans);color:var(--ink);background:transparent;border:1.5px solid var(--ink);border-radius:999px;padding:.62rem 1.05rem;cursor:pointer}
+.btn:hover{background:var(--teal-soft)}
+.btn.solid{background:var(--ink);color:var(--sheet)}
+.btn.solid:hover{background:var(--teal);border-color:var(--teal)}
+.btn:focus-visible,.toggle button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn[aria-pressed="true"]{background:var(--teal-soft);border-color:var(--teal)}
+.slip .btn{width:100%}
+
+/* Statement */
+.statement{padding:4px 0 8px}
+.hero{font-family:var(--serif);font-weight:400;font-size:clamp(1.85rem,3.6vw,2.85rem);line-height:1.22;letter-spacing:-0.01em;margin:0 0 .6rem;max-width:22ch}
+.fill{font-weight:600;font-variant-numeric:lining-nums tabular-nums;border-bottom:2px dotted var(--teal);padding:0 .08em;white-space:nowrap}
+.sub{margin:0 0 20px;color:var(--ink-soft);font-size:1.02rem;max-width:60ch}
+.split{display:flex;height:12px;border-radius:3px;overflow:hidden;background:var(--rule)}
+.split span{display:block;height:100%;transition:width .2s ease}
+.split .p{background:var(--principal)}
+.split .i{background:var(--interest)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 0;padding:0;list-style:none;font-size:.88rem;color:var(--ink-soft)}
+.legend li{display:flex;align-items:center;gap:8px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:2px}
+.sw.p{background:var(--principal)}
+.sw.i{background:var(--interest)}
+.sw.line{height:0;width:18px;border-top:2.5px solid var(--ink);border-radius:0}
+
+.figures{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:26px 0 0;border-top:1px solid var(--rule)}
+.figures div{padding:12px 16px 12px 0;border-bottom:1px solid var(--rule)}
+.figures dt{font-size:.85rem;color:var(--ink-soft);margin:0 0 2px}
+.figures dd{margin:0;font-weight:600;font-size:1.08rem;font-variant-numeric:tabular-nums}
+.delta{margin:18px 0 0;padding:10px 14px;border-left:3px solid var(--teal);background:var(--teal-soft);font-size:.92rem;border-radius:0 6px 6px 0}
+
+.invalid-msg{display:none;font-family:var(--serif);font-size:1.4rem;margin:8px 0 0;max-width:40ch}
+.results.invalid .ok{display:none}
+.results.invalid .invalid-msg{display:block}
+
+/* Chart */
+.chart-block{margin-top:34px}
+h2{font-family:var(--serif);font-weight:600;font-size:1.4rem;line-height:1.2;margin:0 0 4px}
+.chart-note{margin:0 0 12px;color:var(--ink-soft);font-size:.9rem}
+.chart-wrap{position:relative}
+.chart{width:100%;touch-action:pan-y}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .grid{stroke:var(--rule);stroke-width:1}
+.chart .tick{fill:var(--ink-soft);font:500 11px var(--sans);font-variant-numeric:tabular-nums}
+.chart .axis-cap{fill:var(--ink-soft);font:500 11px var(--sans)}
+.chart .bar-p{fill:var(--principal)}
+.chart .bar-i{fill:var(--interest)}
+.chart .bal{fill:none;stroke:var(--ink);stroke-width:2.25;stroke-linejoin:round}
+.chart .hit{fill:transparent}
+.chart svg.hovering .bk{opacity:.4}
+.chart svg.hovering .bk.on{opacity:1}
+.tip{position:absolute;top:0;z-index:2;min-width:190px;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:10px 12px;font-size:.85rem;pointer-events:none;box-shadow:0 6px 18px rgba(20,40,50,.14)}
+.tip strong{display:block;margin-bottom:4px;font-size:.88rem}
+.tip div{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}
+.tip span{color:var(--ink-soft)}
+
+/* IRR */
+.irr-block{margin-top:44px}
+.irr-lead{margin:6px 0 0;font-size:1.02rem;max-width:64ch}
+.irr-block .figures{margin-top:18px}
+.irr-def{margin:12px 0 0;color:var(--ink-soft);font-size:.85rem;max-width:72ch}
+.minor{font-family:var(--sans);font-size:1rem;font-weight:600;margin:30px 0 2px}
+.chart .npv{fill:none;stroke:var(--ink);stroke-width:2.25;stroke-linejoin:round}
+.chart .area-pos{fill:var(--teal);opacity:.18}
+.chart .area-neg{fill:var(--crimson);opacity:.14}
+.chart .zero{stroke:var(--ink-soft);stroke-width:1.25}
+.chart .guide{stroke:var(--teal);stroke-width:1.25;stroke-dasharray:4 4}
+.chart .mk-irr{fill:var(--teal);stroke:var(--sheet);stroke-width:2.5}
+.chart .mk-q{fill:var(--sheet);stroke:var(--crimson);stroke-width:2.5}
+.chart .mk-label{fill:var(--ink);font:600 12px var(--sans);paint-order:stroke;stroke:var(--paper);stroke-width:4px;stroke-linejoin:round}
+.chart .cursor{stroke:var(--ink-soft);stroke-width:1}
+.chart .cur-dot{fill:var(--ink);stroke:var(--sheet);stroke-width:2}
+.sw.dot{border-radius:50%;background:var(--teal)}
+.sw.ring{border-radius:50%;background:transparent;border:2.5px solid var(--crimson)}
+.sw.curve{height:0;width:18px;border-top:2.5px solid var(--ink);border-radius:0}
+
+/* Modes and portfolio */
+.modes{margin-top:18px}
+.slip-title{font-family:var(--serif);font-weight:600;font-size:1.3rem;line-height:1.2;margin:0 0 6px}
+.upload .lead-hint{margin:0 0 14px;color:var(--ink-soft);font-size:.9rem}
+.drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:26px 16px;border:1.5px dashed var(--teal);border-radius:12px;background:var(--teal-soft);cursor:pointer;margin-bottom:12px}
+.drop input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.drop:focus-within{outline:2px solid var(--focus);outline-offset:2px}
+.drop.over{border-style:solid;background:var(--sheet)}
+.drop-main{font-weight:700}
+.drop-sub{font-size:.85rem;color:var(--ink-soft)}
+.upload .btn{width:100%}
+.paste{margin:14px 0 16px}
+.paste summary{cursor:pointer;font-weight:600;font-size:.92rem;padding:4px 0}
+.paste textarea{display:block;width:100%;margin:8px 0 10px;font:.85rem/1.4 var(--sans);color:var(--ink);background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:8px;resize:vertical}
+.pair.one{grid-template-columns:1fr}
+.pf-status{font-size:.88rem;margin:0 0 12px;min-height:1.2em}
+.pf-status.err{color:var(--crimson)}
+.pf-status:empty{display:none}
+.tpl-status{font-size:.82rem;color:var(--teal);margin:6px 0 0}
+.tpl-status:empty{display:none}
+.pf-empty{padding:4px 0}
+.pf-empty .hero{max-width:26ch;font-size:clamp(1.5rem,2.8vw,2.2rem)}
+tr.err td{color:var(--crimson);white-space:normal}
+button.open{font:600 .82rem var(--sans);color:var(--teal);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+button.open:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.toggle button:disabled{opacity:.45;cursor:not-allowed}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* Schedule */
+.schedule{margin-top:clamp(36px,5vw,56px)}
+.schedule-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 20px;margin-bottom:12px}
+.schedule-head p{margin:2px 0 0;color:var(--ink-soft);font-size:.9rem}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.toggle{display:inline-flex;border:1.5px solid var(--ink);border-radius:999px;overflow:hidden}
+.toggle button{font:600 .88rem/1 var(--sans);background:transparent;color:var(--ink);border:0;padding:.62rem .95rem;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--ink);color:var(--sheet)}
+.status{margin:0;font-size:.85rem;color:var(--teal);flex-basis:100%;text-align:right}
+.status:empty{display:none}
+.table-scroll{overflow:auto;max-height:600px;border:1px solid var(--rule);border-radius:10px;background:var(--sheet)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 14px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--rule)}
+th.l,td.l{text-align:left}
+thead th{position:sticky;top:0;background:var(--sheet);font-weight:600;font-size:.82rem;color:var(--ink-soft);box-shadow:inset 0 -1.5px 0 var(--ink);z-index:1}
+tbody tr:nth-child(12n){box-shadow:inset 0 -1.5px 0 var(--rule)}
+tbody tr:hover td{background:var(--teal-soft)}
+tfoot th,tfoot td{position:sticky;bottom:0;background:var(--sheet);font-weight:700;box-shadow:inset 0 1.5px 0 var(--ink);border-bottom:0}
+.assume{margin:14px 0 0;color:var(--ink-soft);font-size:.85rem;max-width:80ch}
+.print-only{display:none}
+
+.mini{display:none}
+@media (max-width:880px){
+  .mini{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--ink);color:var(--sheet);padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));font-size:.92rem;font-variant-numeric:tabular-nums;transform:translateY(110%);transition:transform .2s ease}
+  .mini b{font-weight:700}
+  .mini:not(.show){visibility:hidden;transition:transform .2s ease, visibility 0s .2s}
+  .mini.show{transform:none}
+}
+@media (max-width:560px){
+  .figures{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pair{grid-template-columns:1fr}
+  th,td{padding:7px 10px}
+  .status{text-align:left}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{
+  body{background:#fff;color:#000}
+  .slip,.tools,.tip,.lede,.mini{display:none!important}
+  .layout{display:block}
+  .print-only{display:block;color:#333}
+  .table-scroll{max-height:none;overflow:visible;border:0}
+  thead th,tfoot th,tfoot td{position:static}
+  .chart-block{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Quick Calculator</h1>
+    <p class="lede">Work out fixed-interest cash flows, IRR and a full schedule for one loan, or upload a spreadsheet of loans for consolidated figures.</p>
+    <div class="toggle modes" role="group" aria-label="Calculator mode">
+      <button type="button" id="mSingle" aria-pressed="true">Single loan</button>
+      <button type="button" id="mPort" aria-pressed="false">Loan portfolio</button>
+    </div>
+  </header>
+
+  <div id="singleView">
+
+  <div class="layout">
+    <div class="slip" role="group" aria-label="Loan variables">
+      <div id="rosette" aria-hidden="true"></div>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="principal">Principal</label>
+          <div class="num"><span class="affix" id="curSym">₹</span><input id="principal" type="number" inputmode="decimal" min="0" step="1000"></div>
+        </div>
+        <input id="principalRange" type="range" min="0" max="1000" step="1" aria-label="Adjust principal">
+        <p class="hint" id="principalHint"></p>
+      </div>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="rate">Fixed interest</label>
+          <div class="num"><input id="rate" type="number" inputmode="decimal" min="0" max="100" step="0.05"><span class="affix">% a year</span></div>
+        </div>
+        <input id="rateRange" type="range" min="0" max="30" step="0.05" aria-label="Adjust fixed interest rate">
+        <p class="hint">Flat rate a year on the original principal. It does not reduce as principal is repaid.</p>
+      </div>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="tenure">Tenure</label>
+          <div class="num"><input id="tenure" type="number" inputmode="decimal" min="0" step="0.5"><select id="tenureUnit" aria-label="Tenure unit"><option value="years">years</option><option value="months">months</option></select></div>
+        </div>
+        <input id="tenureRange" type="range" aria-label="Adjust tenure">
+        <p class="hint" id="tenureHint"></p>
+      </div>
+
+      <fieldset class="field">
+        <legend>Frequency</legend>
+        <div class="seg">
+          <input type="radio" name="freq" id="f-monthly" value="monthly"><label for="f-monthly">Monthly</label>
+          <input type="radio" name="freq" id="f-quarterly" value="quarterly"><label for="f-quarterly">Quarterly</label>
+          <input type="radio" name="freq" id="f-halfyearly" value="halfyearly"><label for="f-halfyearly">Half-yearly</label>
+          <input type="radio" name="freq" id="f-yearly" value="yearly"><label for="f-yearly">Yearly</label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="fee">Upfront fees</label>
+          <div class="num"><input id="fee" type="number" inputmode="decimal" min="0" step="0.05"><select id="feeUnit" aria-label="Upfront fee unit"><option value="pct">% of principal</option><option value="amt">amount</option></select></div>
+        </div>
+        <input id="feeRange" type="range" min="0" max="5" step="0.05" aria-label="Adjust upfront fees">
+        <p class="hint" id="feeHint"></p>
+      </div>
+
+      <div class="pair">
+        <div><label for="start">First payment</label><input id="start" type="date"></div>
+        <div>
+          <label for="currency">Currency</label>
+          <select id="currency">
+            <option value="INR">₹ Indian rupee</option>
+            <option value="USD">$ US dollar</option>
+            <option value="EUR">€ Euro</option>
+            <option value="GBP">£ Pound sterling</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="button" class="btn" id="pin" aria-pressed="false">Pin as baseline</button>
+    </div>
+
+    <main class="results" id="results">
+      <section class="statement" aria-live="polite">
+        <p class="invalid-msg" id="invalidMsg"></p>
+        <div class="ok">
+          <p class="hero" id="hero"></p>
+          <p class="sub" id="sub"></p>
+          <div class="split" aria-hidden="true"><span class="p" id="splitP"></span><span class="i" id="splitI"></span></div>
+          <ul class="legend" id="splitLegend"></ul>
+          <dl class="figures" id="figures"></dl>
+          <p class="delta" id="delta" hidden></p>
+          <p class="print-only" id="printParams"></p>
+        </div>
+      </section>
+
+      <section class="chart-block ok" aria-labelledby="chartTitle">
+        <h2 id="chartTitle">How the balance runs down</h2>
+        <p class="chart-note" id="chartNote"></p>
+        <div class="chart-wrap">
+          <div id="chart" class="chart"></div>
+          <div class="tip" id="tip" hidden></div>
+        </div>
+        <ul class="legend">
+          <li><span class="sw p"></span>Principal repaid</li>
+          <li><span class="sw i"></span>Interest paid</li>
+          <li><span class="sw line"></span>Outstanding balance (right axis)</li>
+        </ul>
+      </section>
+
+      <section class="irr-block ok" aria-labelledby="irrTitle">
+        <h2 id="irrTitle">Internal rate of return</h2>
+        <p class="irr-lead" id="irrLead"></p>
+        <dl class="figures" id="irrFigures"></dl>
+        <p class="irr-def" id="irrDef"></p>
+        <h3 class="minor">NPV at different discount rates</h3>
+        <p class="chart-note">The IRR is the discount rate at which the net present value of the loan's cash flows is zero, where the curve crosses the line.</p>
+        <div class="chart-wrap">
+          <div id="npv" class="chart"></div>
+          <div class="tip" id="npvTip" hidden></div>
+        </div>
+        <ul class="legend">
+          <li><span class="sw curve"></span>NPV of the cash flows</li>
+          <li><span class="sw dot"></span>IRR</li>
+          <li><span class="sw ring"></span>Quoted rate</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <section class="schedule" id="schedule" aria-labelledby="schedTitle">
+    <div class="schedule-head">
+      <div>
+        <h2 id="schedTitle">Cash flow schedule</h2>
+        <p id="schedNote"></p>
+      </div>
+      <div class="tools">
+        <div class="toggle" role="group" aria-label="Schedule view">
+          <button type="button" id="vPeriod" aria-pressed="true">By payment</button>
+          <button type="button" id="vYear" aria-pressed="false">By year</button>
+          <button type="button" id="vIrr" aria-pressed="false">IRR workings</button>
+        </div>
+        <button type="button" class="btn" id="dlCsv" hidden>Download CSV</button>
+        <button type="button" class="btn solid" id="dlReport" hidden>Download report</button>
+        <button type="button" class="btn" id="printBtn" hidden>Print</button>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+    <div class="table-scroll" tabindex="0" aria-label="Cash flow table">
+      <table id="table"></table>
+    </div>
+    <p class="assume">Interest is fixed: every period is charged the original principal times the annual rate divided by the number of payments a year, and it does not fall as principal is repaid. Principal is repaid in equal parts, amounts are rounded to two decimals, and the final payment absorbs any rounding difference.</p>
+  </section>
+  </div>
+
+  <div id="portView" hidden>
+    <div class="layout">
+      <div class="slip upload" role="group" aria-label="Loan portfolio upload">
+        <h2 class="slip-title">Upload loans</h2>
+        <p class="lead-hint">One row per loan with Principal, Fixed Interest, Tenure, Frequency, Upfront Fees and First Payment Date.</p>
+        <label class="drop" id="drop">
+          <input type="file" id="pfFile" accept=".xlsx,.xls,.ods,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv">
+          <span class="drop-main">Choose an Excel file</span>
+          <span class="drop-sub">or drop it here (.xlsx, .xls or .csv)</span>
+        </label>
+        <p class="pf-status" id="pfStatus" role="status" aria-live="polite"></p>
+        <button type="button" class="btn" id="dlTemplate" hidden>Download input template</button>
+        <p class="tpl-status" id="tplStatus" role="status" aria-live="polite"></p>
+        <details class="paste">
+          <summary>Or paste rows from Excel</summary>
+          <textarea id="pfPaste" rows="6" placeholder="Copy the header row and your loans in Excel, then paste them here."></textarea>
+          <button type="button" class="btn" id="pfPasteGo">Calculate from pasted rows</button>
+        </details>
+        <div class="pair one">
+          <div>
+            <label for="pfCurrency">Currency</label>
+            <select id="pfCurrency">
+              <option value="INR">₹ Indian rupee</option>
+              <option value="USD">$ US dollar</option>
+              <option value="EUR">€ Euro</option>
+              <option value="GBP">£ Pound sterling</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" class="btn" id="pfClear" hidden>Clear portfolio</button>
+      </div>
+
+      <main class="pf-results">
+        <div class="pf-empty" id="pfEmpty">
+          <p class="hero" id="pfEmptyLead"></p>
+          <p class="sub">Start from the input template so every column is read correctly. Files stay in your browser; nothing is uploaded to a server.</p>
+        </div>
+        <div id="pfBody" hidden>
+          <section class="statement" aria-live="polite">
+            <p class="hero" id="pfHero"></p>
+            <p class="sub" id="pfSub"></p>
+            <div class="split" aria-hidden="true"><span class="p" id="pfSplitP"></span><span class="i" id="pfSplitI"></span></div>
+            <ul class="legend" id="pfSplitLegend"></ul>
+            <dl class="figures" id="pfFigures"></dl>
+          </section>
+          <section class="chart-block" aria-labelledby="pfChartTitle">
+            <h2 id="pfChartTitle">Consolidated cash flows</h2>
+            <p class="chart-note" id="pfChartNote"></p>
+            <div class="chart-wrap">
+              <div id="pfChart" class="chart"></div>
+              <div class="tip" id="pfTip" hidden></div>
+            </div>
+            <ul class="legend">
+              <li><span class="sw p"></span>Principal repaid</li>
+              <li><span class="sw i"></span>Interest</li>
+              <li><span class="sw line"></span>Principal outstanding (right axis)</li>
+            </ul>
+          </section>
+          <section class="irr-block" aria-labelledby="pfIrrTitle">
+            <h2 id="pfIrrTitle">Portfolio IRR</h2>
+            <p class="irr-lead" id="pfIrrLead"></p>
+            <dl class="figures" id="pfIrrFigures"></dl>
+            <p class="irr-def" id="pfIrrDef"></p>
+            <h3 class="minor">NPV at different discount rates</h3>
+            <p class="chart-note">The XIRR is the discount rate at which the net present value of all the loans’ cash flows is zero, where the curve crosses the line.</p>
+            <div class="chart-wrap">
+              <div id="pfNpv" class="chart"></div>
+              <div class="tip" id="pfNpvTip" hidden></div>
+            </div>
+            <ul class="legend">
+              <li><span class="sw curve"></span>NPV of the combined cash flows</li>
+              <li><span class="sw dot"></span>XIRR</li>
+              <li><span class="sw ring"></span>Weighted fixed rate</li>
+            </ul>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <section class="schedule" id="pfSchedule" aria-labelledby="pfSchedTitle" hidden>
+      <div class="schedule-head">
+        <div>
+          <h2 id="pfSchedTitle">Loans and consolidated cash flows</h2>
+          <p id="pfSchedNote"></p>
+        </div>
+        <div class="tools">
+          <div class="toggle" role="group" aria-label="Portfolio table view">
+            <button type="button" id="pvLoans" aria-pressed="true">By loan</button>
+            <button type="button" id="pvMonth" aria-pressed="false">By month</button>
+            <button type="button" id="pvYear" aria-pressed="false">By year</button>
+          </div>
+          <button type="button" class="btn" id="pfDlXlsx" hidden>Download Excel results</button>
+          <button type="button" class="btn solid" id="pfDlReport" hidden>Download report</button>
+          <button type="button" class="btn" id="pfPrint" hidden>Print</button>
+          <p class="status" id="pfSaveStatus" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+      <div class="table-scroll" tabindex="0" aria-label="Portfolio table">
+        <table id="pfTable"></table>
+      </div>
+      <p class="assume">Each loan uses fixed interest on its original principal, repaid in equal parts. Its net amount disbursed (principal less upfront fees) is treated as paid out one period before its first payment. The portfolio XIRR discounts all loans’ cash flows on their actual dates using a 365-day year.</p>
+    </section>
+  </div>
+</div>
+
+<div class="mini" id="mini" aria-hidden="true"></div>
+
+<noscript><p style="padding:20px">Turn on JavaScript to use the calculator.</p></noscript>
+
+<script>
+(function(){
+'use strict';
+
+var FREQ = {
+  monthly:    {ppy:12, label:'Monthly',     every:'every month',      noun:'monthly',     per:'month'},
+  quarterly:  {ppy:4,  label:'Quarterly',   every:'every quarter',    noun:'quarterly',   per:'quarter'},
+  halfyearly: {ppy:2,  label:'Half-yearly', every:'every six months', noun:'half-yearly', per:'half-year'},
+  yearly:     {ppy:1,  label:'Yearly',      every:'every year',       noun:'yearly',      per:'year'}
+};
+var CUR = {
+  INR:{sym:'₹', locale:'en-IN'},
+  USD:{sym:'$', locale:'en-US'},
+  EUR:{sym:'€', locale:'en-IE'},
+  GBP:{sym:'£', locale:'en-GB'}
+};
+var STORE_KEY = 'quick-calculator:v1';
+var PMIN = 1e4, PMAX = 1e8;
+
+function $(id){ return document.getElementById(id); }
+var framed = (function(){ try { return window.self !== window.top; } catch(e){ return true; } })();
+
+/* ---------- dates ---------- */
+function pad(n){ return (n < 10 ? '0' : '') + n; }
+function toISO(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+function parseISO(s){
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) return null;
+  var p = s.split('-').map(Number), d = new Date(p[0], p[1]-1, p[2]);
+  return isNaN(d.getTime()) ? null : d;
+}
+function defaultStart(){ var t = new Date(); return toISO(new Date(t.getFullYear(), t.getMonth()+1, 1)); }
+function addMonths(date, k){
+  var y = date.getFullYear(), m = date.getMonth() + k, d = date.getDate();
+  var last = new Date(y, m+1, 0).getDate();
+  return new Date(y, m, Math.min(d, last));
+}
+function round2(v){ return Math.round((v + (v >= 0 ? Number.EPSILON : -Number.EPSILON)) * 100) / 100; }
+
+/* ---------- state ---------- */
+var DEFAULTS = {principal:1000000, rate:9.5, tenure:5, unit:'years', freq:'monthly', start:defaultStart(), currency:'INR', fee:0, feeUnit:'pct'};
+var state = loadState();
+var view = 'period';
+var baseline = null;
+var current = null;
+var F = {};
+
+function loadState(){
+  var s = Object.assign({}, DEFAULTS);
+  try {
+    var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (saved && typeof saved === 'object') {
+      ['principal','rate','tenure','fee'].forEach(function(k){ if (typeof saved[k] === 'number' && isFinite(saved[k])) s[k] = saved[k]; });
+      ['unit','freq','start','currency','feeUnit'].forEach(function(k){ if (typeof saved[k] === 'string') s[k] = saved[k]; });
+    }
+  } catch(e){}
+  try {
+    var q = new URLSearchParams(location.search);
+    if (q.has('p')) s.principal = parseFloat(q.get('p'));
+    if (q.has('r')) s.rate = parseFloat(q.get('r'));
+    if (q.has('t')) s.tenure = parseFloat(q.get('t'));
+    if (q.has('u')) s.unit = q.get('u');
+    if (q.has('f')) s.freq = q.get('f');
+    if (q.has('d')) s.start = q.get('d');
+    if (q.has('c')) s.currency = q.get('c');
+    if (q.has('fe')) s.fee = parseFloat(q.get('fe'));
+    if (q.has('fu')) s.feeUnit = q.get('fu');
+  } catch(e){}
+  if (!FREQ[s.freq]) s.freq = 'monthly';
+  if (!CUR[s.currency]) s.currency = 'INR';
+  if (s.unit !== 'years' && s.unit !== 'months') s.unit = 'years';
+  if (s.feeUnit !== 'pct' && s.feeUnit !== 'amt') s.feeUnit = 'pct';
+  if (!parseISO(s.start)) s.start = defaultStart();
+  ['principal','rate','tenure','fee'].forEach(function(k){ if (!isFinite(s[k])) s[k] = DEFAULTS[k]; });
+  return s;
+}
+
+var persistTimer;
+function persist(){
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(function(){
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e){}
+    if (!framed) {
+      try {
+        var q = new URLSearchParams({p:state.principal, r:state.rate, t:state.tenure, u:state.unit, f:state.freq, d:state.start, c:state.currency, fe:state.fee, fu:state.feeUnit});
+        history.replaceState(null, '', location.pathname + '?' + q.toString());
+      } catch(e){}
+    }
+  }, 300);
+}
+
+/* ---------- formatting ---------- */
+function setFormatters(){
+  var c = CUR[state.currency], loc = c.locale;
+  F.m0 = new Intl.NumberFormat(loc, {style:'currency', currency:state.currency, minimumFractionDigits:0, maximumFractionDigits:0});
+  F.m2 = new Intl.NumberFormat(loc, {style:'currency', currency:state.currency, minimumFractionDigits:2, maximumFractionDigits:2});
+  F.n2 = new Intl.NumberFormat(loc, {minimumFractionDigits:2, maximumFractionDigits:2});
+  F.date = new Intl.DateTimeFormat(loc, {day:'numeric', month:'short', year:'numeric'});
+  F.month = new Intl.DateTimeFormat(loc, {month:'short', year:'numeric'});
+  F.mshort = new Intl.DateTimeFormat(loc, {month:'short', year:'2-digit'});
+  F.monthLong = new Intl.DateTimeFormat(loc, {month:'long', year:'numeric'});
+  F.sym = c.sym;
+}
+function trim1(v){ return String(Math.round(v*10)/10); }
+function trim2(v){ return String(Math.round(v*100)/100); }
+function shortMoney(v){
+  var a = Math.abs(v), s = F.sym;
+  if (a === 0) return s + '0';
+  if (state.currency === 'INR') {
+    if (a >= 1e7) return s + trim1(v/1e7) + 'Cr';
+    if (a >= 1e5) return s + trim1(v/1e5) + 'L';
+  } else {
+    if (a >= 1e9) return s + trim1(v/1e9) + 'B';
+    if (a >= 1e6) return s + trim1(v/1e6) + 'M';
+  }
+  if (a >= 1e3) return s + trim1(v/1e3) + 'K';
+  return s + Math.round(v);
+}
+function inWords(v){
+  if (state.currency === 'INR') {
+    if (v >= 1e7) return trim2(v/1e7) + ' crore';
+    if (v >= 1e5) return trim2(v/1e5) + ' lakh';
+  } else {
+    if (v >= 1e9) return trim2(v/1e9) + ' billion';
+    if (v >= 1e6) return trim2(v/1e6) + ' million';
+  }
+  return '';
+}
+function signed(v){
+  if (Math.abs(v) < 0.5) return 'no change';
+  return (v > 0 ? '+' : '\u2212') + F.m0.format(Math.abs(v));
+}
+
+/* ---------- maths ---------- */
+function periodsFor(s){
+  var mpp = 12 / FREQ[s.freq].ppy;
+  var months = s.unit === 'years' ? s.tenure * 12 : s.tenure;
+  var raw = months / mpp;
+  return {months:months, raw:raw, n:Math.max(1, Math.round(raw)), exact:Math.abs(raw - Math.round(raw)) < 1e-9 && raw >= 1};
+}
+
+function feeAmount(s){
+  if (!(s.fee > 0)) return 0;
+  return round2(s.feeUnit === 'pct' ? s.principal * s.fee / 100 : s.fee);
+}
+
+function validate(s){
+  if (!(s.principal > 0)) return 'Enter a principal above zero to see the cash flows.';
+  if (!(s.fee >= 0)) return 'Enter upfront fees of zero or more.';
+  if (feeAmount(s) >= s.principal) return 'Upfront fees must be less than the principal.';
+  if (!(s.rate >= 0 && s.rate <= 100)) return 'Enter an annual interest rate between 0% and 100%.';
+  var months = s.unit === 'years' ? s.tenure * 12 : s.tenure;
+  if (!(months > 0)) return 'Enter a tenure above zero to see the cash flows.';
+  if (months > 600) return 'Keep the tenure at 50 years (600 months) or less.';
+  return null;
+}
+
+function compute(s){
+  var f = FREQ[s.freq], ppy = f.ppy, mpp = 12 / ppy;
+  var per = periodsFor(s), n = per.n;
+  var r = s.rate / 100 / ppy;
+  var P = round2(s.principal);
+  // Fixed (flat) interest: charged on the original principal every period, not on the reducing balance.
+  var intPer = round2(P * r);
+  var prinPer = round2(P / n);
+  var emi = round2(prinPer + intPer);
+  var start = parseISO(s.start) || parseISO(defaultStart());
+  var rows = [], bal = P, cumI = 0, paid = 0;
+  for (var i = 1; i <= n && bal > 0; i++) {
+    var open = bal;
+    var principal = prinPer;
+    if (i === n || principal >= bal) principal = bal;
+    // Interest is the same every period; the last one absorbs rounding so total interest = P x rate x years exactly.
+    var interest = (i === n || principal >= bal) ? round2(P * r * i - cumI) : intPer;
+    var pay = round2(principal + interest);
+    bal = round2(bal - principal);
+    cumI = round2(cumI + interest);
+    paid = round2(paid + pay);
+    rows.push({i:i, date:addMonths(start, (i-1) * mpp), open:open, pay:pay, interest:interest, principal:principal, close:bal, cumI:cumI});
+  }
+  var res = {rows:rows, n:rows.length, per:per, emi:emi, ppy:ppy, mpp:mpp, P:P, totalInterest:cumI, totalPaid:paid, last:rows[rows.length-1]};
+  res.fees = feeAmount(s);
+  res.net = round2(P - res.fees);
+  res.disb = addMonths(start, -mpp);
+  res.irrP = solveRate(function(x){ return npvAt(res, x); });
+  res.irrNom = res.irrP * ppy;
+  res.irrEff = Math.pow(1 + res.irrP, ppy) - 1;
+  res.xirr = solveRate(function(x){ return xnpv(res, x); });
+  return res;
+}
+
+/* Lender's side: the net amount disbursed goes out at period 0, installments come in.
+   The IRR is the same rate seen from the borrower's side (with signs flipped). */
+function npvAt(res, i){
+  var v = -res.net, rows = res.rows, k;
+  if (i === 0) { for (k = 0; k < rows.length; k++) v += rows[k].pay; return v; }
+  var f = 1 / (1 + i), d = 1;
+  for (k = 0; k < rows.length; k++) { d *= f; v += rows[k].pay * d; }
+  return v;
+}
+function dayNum(d){ return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000; }
+function xnpv(res, x){
+  var d0 = dayNum(res.disb), v = -res.net;
+  res.rows.forEach(function(r){ v += r.pay / Math.pow(1 + x, (dayNum(r.date) - d0) / 365); });
+  return v;
+}
+function solveRate(fn){
+  var lo = -0.99, hi = 1, flo = fn(lo), fhi = fn(hi), guard = 0;
+  while (fhi > 0 && guard++ < 60) { lo = hi; flo = fhi; hi *= 2; fhi = fn(hi); }
+  if (!(flo >= 0 && fhi <= 0)) return NaN;
+  for (var it = 0; it < 200 && hi - lo > 1e-13; it++) {
+    var mid = (lo + hi) / 2, fm = fn(mid);
+    if (fm > 0) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function yearGroups(res){
+  var g = [];
+  res.rows.forEach(function(r){
+    var y = Math.ceil(r.i / res.ppy), b = g[y-1];
+    if (!b) b = g[y-1] = {y:y, first:r.date, last:r.date, count:0, paid:0, interest:0, principal:0, close:0};
+    b.last = r.date; b.count++; b.paid += r.pay; b.interest += r.interest; b.principal += r.principal; b.close = r.close;
+  });
+  return g.map(function(b){ b.paid = round2(b.paid); b.interest = round2(b.interest); b.principal = round2(b.principal); return b; });
+}
+
+/* ---------- inputs ---------- */
+function posToP(pos){
+  var v = Math.pow(10, 4 + 4 * pos / 1000);
+  var step = v < 1e5 ? 500 : v < 1e6 ? 5000 : v < 1e7 ? 50000 : 500000;
+  return Math.round(v / step) * step;
+}
+function pToPos(v){
+  if (!(v > 0)) return 0;
+  return Math.min(1000, Math.max(0, Math.round((Math.log10(v) - 4) / 4 * 1000)));
+}
+function setTenureRange(){
+  var tr = $('tenureRange');
+  if (state.unit === 'years') { tr.min = 0.5; tr.max = 30; tr.step = 0.5; $('tenure').step = 0.5; }
+  else { tr.min = 1; tr.max = 360; tr.step = 1; $('tenure').step = 1; }
+  tr.value = isFinite(state.tenure) ? state.tenure : tr.min;
+}
+function setFeeRange(){
+  var r = $('feeRange'), pct = state.feeUnit === 'pct';
+  r.hidden = !pct;
+  if (pct) r.value = isFinite(state.fee) ? state.fee : 0;
+  $('fee').step = pct ? 0.05 : 100;
+}
+function applyStateToInputs(){
+  $('principal').value = state.principal;
+  $('principalRange').value = pToPos(state.principal);
+  $('rate').value = state.rate;
+  $('rateRange').value = state.rate;
+  $('tenureUnit').value = state.unit;
+  $('tenure').value = state.tenure;
+  setTenureRange();
+  var radio = document.getElementById('f-' + state.freq); if (radio) radio.checked = true;
+  $('start').value = state.start;
+  $('currency').value = state.currency;
+  $('pfCurrency').value = state.currency;
+  $('fee').value = state.fee;
+  $('feeUnit').value = state.feeUnit;
+  setFeeRange();
+  $('curSym').textContent = CUR[state.currency].sym;
+}
+
+function num(v){ var x = parseFloat(v); return isFinite(x) ? x : NaN; }
+
+$('principal').addEventListener('input', function(){ state.principal = num(this.value); $('principalRange').value = pToPos(state.principal); update(); });
+$('principalRange').addEventListener('input', function(){ state.principal = posToP(+this.value); $('principal').value = state.principal; update(); });
+$('rate').addEventListener('input', function(){ state.rate = num(this.value); if (isFinite(state.rate)) $('rateRange').value = state.rate; update(); });
+$('rateRange').addEventListener('input', function(){ state.rate = +this.value; $('rate').value = state.rate; update(); });
+$('tenure').addEventListener('input', function(){ state.tenure = num(this.value); if (isFinite(state.tenure)) $('tenureRange').value = state.tenure; update(); });
+$('tenureRange').addEventListener('input', function(){ state.tenure = +this.value; $('tenure').value = state.tenure; update(); });
+$('tenureUnit').addEventListener('change', function(){
+  var old = state.unit; state.unit = this.value;
+  if (isFinite(state.tenure)) {
+    if (old === 'years' && state.unit === 'months') state.tenure = Math.round(state.tenure * 12);
+    if (old === 'months' && state.unit === 'years') state.tenure = Math.round(state.tenure / 12 * 100) / 100;
+  }
+  $('tenure').value = state.tenure; setTenureRange(); update();
+});
+Array.prototype.forEach.call(document.querySelectorAll('input[name=freq]'), function(r){
+  r.addEventListener('change', function(){ if (this.checked) { state.freq = this.value; update(); } });
+});
+$('start').addEventListener('change', function(){ state.start = parseISO(this.value) ? this.value : defaultStart(); if (!parseISO(this.value)) this.value = state.start; update(); });
+function setCurrency(c){
+  state.currency = c;
+  $('currency').value = c; $('pfCurrency').value = c;
+  $('curSym').textContent = CUR[c].sym;
+  setFormatters(); update();
+  if (pf) renderPortfolio();
+}
+$('currency').addEventListener('change', function(){ setCurrency(this.value); });
+$('pfCurrency').addEventListener('change', function(){ setCurrency(this.value); });
+$('fee').addEventListener('input', function(){ state.fee = this.value === '' ? 0 : num(this.value); if (state.feeUnit === 'pct' && isFinite(state.fee)) $('feeRange').value = state.fee; update(); });
+$('feeRange').addEventListener('input', function(){ state.fee = +this.value; $('fee').value = state.fee; update(); });
+$('feeUnit').addEventListener('change', function(){
+  var old = state.feeUnit; state.feeUnit = this.value;
+  if (isFinite(state.fee) && state.principal > 0) {
+    if (old === 'pct' && state.feeUnit === 'amt') state.fee = Math.round(state.principal * state.fee / 100);
+    if (old === 'amt' && state.feeUnit === 'pct') state.fee = Math.round(state.fee / state.principal * 10000) / 100;
+  }
+  $('fee').value = state.fee; setFeeRange(); update();
+});
+
+$('pin').addEventListener('click', function(){
+  if (baseline) baseline = null;
+  else if (current) baseline = {emi:current.emi, n:current.n, totalInterest:current.totalInterest, totalPaid:current.totalPaid, irrEff:current.irrEff, freq:state.freq, currency:state.currency};
+  this.textContent = baseline ? 'Clear baseline' : 'Pin as baseline';
+  this.setAttribute('aria-pressed', baseline ? 'true' : 'false');
+  renderDelta();
+});
+
+$('vPeriod').addEventListener('click', function(){ setView('period'); });
+$('vYear').addEventListener('click', function(){ setView('year'); });
+$('vIrr').addEventListener('click', function(){ setView('irr'); });
+function setView(v){
+  view = v;
+  $('vPeriod').setAttribute('aria-pressed', v === 'period' ? 'true' : 'false');
+  $('vYear').setAttribute('aria-pressed', v === 'year' ? 'true' : 'false');
+  $('vIrr').setAttribute('aria-pressed', v === 'irr' ? 'true' : 'false');
+  if (current) renderTable(current);
+}
+
+/* ---------- rendering ---------- */
+function tenureText(){
+  var t = state.tenure;
+  return t + ' ' + (state.unit === 'years' ? (t === 1 ? 'year' : 'years') : (t === 1 ? 'month' : 'months'));
+}
+
+function update(){
+  var per = isFinite(state.tenure) ? periodsFor(state) : null;
+  var w = state.principal > 0 ? inWords(state.principal) : '';
+  $('principalHint').textContent = state.principal > 0 ? F.m0.format(state.principal) + (w ? ' (' + w + ')' : '') : '';
+  var th = $('tenureHint');
+  th.classList.remove('warn');
+  if (per && per.months > 0) {
+    var noun = FREQ[state.freq].noun;
+    if (per.exact) th.textContent = per.n + ' ' + noun + ' payment' + (per.n === 1 ? '' : 's');
+    else { th.textContent = 'Rounded to ' + per.n + ' ' + noun + ' payment' + (per.n === 1 ? '' : 's'); th.classList.add('warn'); }
+  } else th.textContent = '';
+
+  var fa = feeAmount(state);
+  $('feeHint').textContent = (state.principal > 0 && fa > 0 && fa < state.principal)
+    ? F.m0.format(fa) + ' taken at disbursement, so ' + F.m0.format(state.principal - fa) + ' is paid out.'
+    : (fa === 0 ? 'Processing or other charges taken at the start. They raise the IRR.' : '');
+
+  var err = validate(state);
+  var res = $('results');
+  if (err) {
+    res.classList.add('invalid');
+    $('invalidMsg').textContent = err;
+    $('schedule').style.display = 'none';
+    current = null;
+    $('mini').classList.remove('show');
+    persist();
+    return;
+  }
+  res.classList.remove('invalid');
+  $('schedule').style.display = '';
+  current = compute(state);
+  renderStatement(current);
+  renderDelta();
+  drawChart(current);
+  renderIRR(current);
+  drawNPV(current);
+  renderTable(current);
+  persist();
+}
+
+function renderStatement(res){
+  var f = FREQ[state.freq], first = res.rows[0], last = res.last;
+  if (res.n === 1) {
+    $('hero').innerHTML = 'Pay <span class="fill">' + F.m0.format(last.pay) + '</span> once, on <span class="fill">' + F.date.format(last.date) + '</span>.';
+  } else {
+    $('hero').innerHTML = 'Pay <span class="fill">' + F.m0.format(res.emi) + '</span> ' + f.every + ', <span class="fill">' + res.n + ' times</span>.';
+  }
+  var lastNote = (res.n > 1 && Math.abs(last.pay - res.emi) >= 0.01) ? ' The final payment is ' + F.m2.format(last.pay) + '.' : '';
+  var feeNote = res.fees > 0 ? ', plus ' + F.m0.format(res.fees) + ' in upfront fees' : '';
+  $('sub').textContent = 'You repay ' + F.m0.format(res.totalPaid) + ' in total, of which ' + F.m0.format(res.totalInterest) + ' is interest' + feeNote + '.' + lastNote;
+
+  var pp = res.totalPaid > 0 ? res.P / res.totalPaid * 100 : 100, ip = 100 - pp;
+  $('splitP').style.width = pp + '%';
+  $('splitI').style.width = ip + '%';
+  $('splitLegend').innerHTML =
+    '<li><span class="sw p"></span>Principal ' + F.m0.format(res.P) + ' (' + pp.toFixed(1) + '%)</li>' +
+    '<li><span class="sw i"></span>Interest ' + F.m0.format(res.totalInterest) + ' (' + ip.toFixed(1) + '%)</li>';
+
+  var figs = [
+    ['Installment', F.m2.format(res.emi)],
+    ['Number of payments', res.n + ' ' + f.noun],
+    ['Total interest', F.m2.format(res.totalInterest)],
+    ['Total repaid', F.m2.format(res.totalPaid)],
+    ['First payment', F.date.format(first.date)],
+    ['Final payment', F.date.format(last.date)]
+  ];
+  $('figures').innerHTML = figs.map(function(x){ return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('');
+  $('mini').innerHTML = '<span><b>' + F.m0.format(res.n === 1 ? last.pay : res.emi) + '</b> ' + (res.n === 1 ? 'once' : f.noun + ', ' + res.n + ' payments') + '</span><span>Interest <b>' + F.m0.format(res.totalInterest) + '</b></span>';
+  $('printParams').textContent = 'Principal ' + F.m2.format(res.P) + ', fixed interest ' + state.rate + '% a year, tenure ' + tenureText() + ', ' + f.label.toLowerCase() + ' payments from ' + F.date.format(first.date) + '.';
+}
+
+function renderDelta(){
+  var d = $('delta');
+  if (!baseline || !current) { d.hidden = true; return; }
+  d.hidden = false;
+  if (baseline.currency !== state.currency) {
+    d.textContent = 'Your baseline was set in ' + baseline.currency + '. Switch back to ' + baseline.currency + ' to compare.';
+    return;
+  }
+  var head = 'Against your baseline of ' + F.m0.format(baseline.emi) + ' ' + FREQ[baseline.freq].noun + ' over ' + baseline.n + ' payments: ';
+  var parts = [];
+  if (baseline.freq === state.freq) {
+    parts.push('installment ' + signed(current.emi - baseline.emi));
+    var dn = current.n - baseline.n;
+    if (dn !== 0) parts.push(Math.abs(dn) + (dn > 0 ? ' more' : ' fewer') + ' payment' + (Math.abs(dn) === 1 ? '' : 's'));
+  }
+  parts.push('total interest ' + signed(current.totalInterest - baseline.totalInterest));
+  parts.push('total repaid ' + signed(current.totalPaid - baseline.totalPaid));
+  if (isFinite(baseline.irrEff) && isFinite(current.irrEff)) {
+    var dp = (current.irrEff - baseline.irrEff) * 100;
+    parts.push('effective IRR ' + (Math.abs(dp) < 0.005 ? 'no change' : (dp > 0 ? '+' : '\u2212') + Math.abs(dp).toFixed(2) + ' pp'));
+  }
+  d.textContent = head + parts.join(', ') + '.';
+}
+
+/* ---------- IRR ---------- */
+function pct(v, d){ return isFinite(v) ? (v * 100).toFixed(d) + '%' : 'n/a'; }
+function moneySigned(v){ return v < 0 ? '\u2212' + F.m0.format(-v) : F.m0.format(v); }
+function shortSigned(v){ return v < 0 ? '\u2212' + shortMoney(-v) : shortMoney(v); }
+
+function renderIRR(res){
+  var f = FREQ[state.freq], q = state.rate / 100, lead;
+  lead = (q > 0 ? 'A fixed rate of ' + pct(q, 2) + ' is charged on the full ' + F.m0.format(res.P) + ' for the whole tenure, even as the principal is repaid' : 'No interest is charged') +
+    (res.fees > 0 ? ', and ' + F.m0.format(res.fees) + ' of upfront fees means only ' + F.m0.format(res.net) + ' is paid out.' : '.') +
+    ' That makes the true cost an IRR of ' + pct(res.irrNom, 2) + ' a year' + (res.ppy > 1 ? ' (' + pct(res.irrEff, 2) + ' as an effective annual rate)' : '') +
+    ((q > 0 && isFinite(res.irrNom) && res.irrNom / q >= 1.05) ? ', about ' + (res.irrNom / q).toFixed(1) + ' times the quoted rate.' : '.');
+  $('irrLead').textContent = lead;
+  var figs = [
+    ['IRR per ' + f.per, pct(res.irrP, 4)],
+    ['Annual IRR, nominal', pct(res.irrNom, 2)],
+    ['Annual IRR, effective', pct(res.irrEff, 2)],
+    ['XIRR on actual dates', pct(res.xirr, 2)],
+    ['Net amount disbursed', F.m0.format(res.net)],
+    ['Total cost of credit', F.m0.format(res.totalInterest + res.fees)]
+  ];
+  $('irrFigures').innerHTML = figs.map(function(x){ return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('');
+  $('irrDef').textContent = 'Nominal is the IRR per ' + f.per + ' times ' + res.ppy + ': the reducing-balance rate this fixed-rate loan is equivalent to, so you can compare it with other loans. Effective compounds it over a year. XIRR uses the actual days between disbursement on ' +
+    F.date.format(res.disb) + ' (one period before the first payment) and each payment, the way Excel\u2019s XIRR does. The IRR is the same whether read as the borrower\u2019s cost or the lender\u2019s yield.';
+}
+
+/* ---------- charts (shared by single loan and portfolio) ---------- */
+function niceMax(v){
+  if (!(v > 0)) return 1;
+  var e = Math.pow(10, Math.floor(Math.log10(v))), c = [1, 1.2, 2, 2.4, 3.2, 4, 6, 8, 10];
+  for (var i = 0; i < c.length; i++) if (c[i] * e >= v * 0.9999) return c[i] * e;
+  return 10 * e;
+}
+function niceStep(raw){
+  var e = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / e;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * e;
+}
+var geo = {};
+function watchWidth(id, redraw){
+  var last = 0;
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(function(en){
+      var w = Math.round(en[0].contentRect.width);
+      if (w && Math.abs(w - last) > 2) { last = w; redraw(); }
+    }).observe($(id));
+  } else window.addEventListener('resize', redraw);
+}
+function placeTip(boxId, tip, e){
+  var wrap = $(boxId).getBoundingClientRect(), px = e.clientX - wrap.left + 14, tw = tip.offsetWidth;
+  if (px + tw > wrap.width) px = e.clientX - wrap.left - tw - 14;
+  tip.style.left = Math.max(0, px) + 'px';
+}
+
+/* Stacked principal/interest bars with an outstanding-balance line on the right axis.
+   buckets: [{label, title, p, int, close, rows:[[label, amount], ...]}] */
+function drawBarChart(id, tipId, buckets, startBal, cap, aria, labelW){
+  var box = $(id);
+  var W = Math.max(300, Math.round(box.clientWidth || 640));
+  var narrow = W < 560, H = narrow ? 230 : 290;
+  var m = {l: narrow ? 46 : 62, r: narrow ? 46 : 62, t: 12, b: 38};
+  var iw = W - m.l - m.r, ih = H - m.t - m.b;
+  var maxPay = 0, maxBal = startBal;
+  buckets.forEach(function(b){ maxPay = Math.max(maxPay, b.p + b.int); maxBal = Math.max(maxBal, b.close); });
+  var yL = niceMax(maxPay), yR = niceMax(maxBal);
+  var bw = iw / buckets.length, barW = Math.max(1.5, Math.min(bw * 0.66, 46));
+  function yl(v){ return m.t + ih * (1 - v / yL); }
+  function yr(v){ return m.t + ih * (1 - v / yR); }
+  var out = '';
+  for (var k = 0; k <= 4; k++) {
+    var y = m.t + ih * k / 4;
+    out += '<line class="grid" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '"/>';
+    out += '<text class="tick" x="' + (m.l - 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end">' + shortMoney(yL * (1 - k/4)) + '</text>';
+    out += '<text class="tick" x="' + (W - m.r + 8) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="start">' + shortMoney(yR * (1 - k/4)) + '</text>';
+  }
+  buckets.forEach(function(b, k){
+    var cx = m.l + bw * (k + 0.5), x = cx - barW / 2, yp = yl(b.p), yi = yl(b.p + b.int);
+    out += '<g class="bk" data-k="' + k + '"><rect class="bar-p" x="' + x.toFixed(1) + '" y="' + yp.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(0, m.t + ih - yp).toFixed(1) + '"/>' +
+           '<rect class="bar-i" x="' + x.toFixed(1) + '" y="' + yi.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + Math.max(0, yp - yi).toFixed(1) + '"/></g>';
+  });
+  var pts = [[m.l, yr(startBal)]];
+  buckets.forEach(function(b, k){ pts.push([m.l + bw * (k + 1), yr(b.close)]); });
+  out += '<path class="bal" d="M' + pts.map(function(p){ return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' L') + '"/>';
+  var lw = labelW || (narrow ? 30 : 36);
+  var maxLabels = Math.max(2, Math.floor(iw / lw));
+  var step = Math.max(1, Math.ceil(buckets.length / maxLabels));
+  buckets.forEach(function(b, k){
+    var isLast = k === buckets.length - 1;
+    if (k % step === 0 || (isLast && k % step > step / 2)) {
+      out += '<text class="tick" x="' + (m.l + bw * (k + 0.5)).toFixed(1) + '" y="' + (H - m.b + 16) + '" text-anchor="middle">' + b.label + '</text>';
+    }
+  });
+  out += '<text class="axis-cap" x="' + (m.l + iw / 2) + '" y="' + (H - 3) + '" text-anchor="middle">' + cap + '</text>';
+  out += '<rect class="hit" x="' + m.l + '" y="' + m.t + '" width="' + iw + '" height="' + ih + '"/>';
+  box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + aria + '">' + out + '</svg>';
+  geo[id] = {m:m, bw:bw, W:W, n:buckets.length, buckets:buckets, tip:tipId};
+  hideBarTip(id);
+}
+function hideBarTip(id){
+  var g = geo[id]; if (!g) return;
+  $(g.tip).hidden = true;
+  var svg = $(id).querySelector('svg');
+  if (svg) { svg.classList.remove('hovering'); var on = svg.querySelector('.bk.on'); if (on) on.classList.remove('on'); }
+}
+function barPointer(id, e){
+  var g = geo[id], svg = $(id).querySelector('svg');
+  if (!g || !svg) return;
+  var rect = svg.getBoundingClientRect();
+  var x = (e.clientX - rect.left) * g.W / rect.width;
+  var k = Math.floor((x - g.m.l) / g.bw);
+  if (k < 0 || k >= g.n) { hideBarTip(id); return; }
+  var b = g.buckets[k], tip = $(g.tip);
+  tip.innerHTML = '<strong>' + b.title + '</strong>' + b.rows.map(function(r){ return '<div><span>' + r[0] + '</span>' + F.m0.format(r[1]) + '</div>'; }).join('');
+  tip.hidden = false;
+  placeTip(id, tip, e);
+  svg.classList.add('hovering');
+  var prev = svg.querySelector('.bk.on'); if (prev) prev.classList.remove('on');
+  var gk = svg.querySelector('.bk[data-k="' + k + '"]'); if (gk) gk.classList.add('on');
+}
+function attachBarChart(id, redraw){
+  $(id).addEventListener('pointermove', function(e){ barPointer(id, e); });
+  $(id).addEventListener('pointerdown', function(e){ barPointer(id, e); });
+  $(id).addEventListener('pointerleave', function(){ hideBarTip(id); });
+  watchWidth(id, redraw);
+}
+
+/* NPV against the annual discount rate; fn(rate) returns the NPV. */
+function drawNpvChart(id, tipId, fn, irr, q, o){
+  var box = $(id);
+  var W = Math.max(300, Math.round(box.clientWidth || 640)), narrow = W < 560, H = narrow ? 240 : 290;
+  var m = {l: narrow ? 54 : 68, r: 20, t: 16, b: 40};
+  var iw = W - m.l - m.r, ih = H - m.t - m.b;
+  var hiRate = Math.max(q, isFinite(irr) ? irr : 0);
+  var rawMax = Math.max(0.1, hiRate * 1.8 + 0.02);
+  var xs = niceStep(rawMax / 5), xMax = Math.ceil(rawMax / xs - 1e-9) * xs;
+  var N = 140, pts = [], yMin = 0, yMax = 0;
+  for (var j = 0; j <= N; j++) {
+    var x = xMax * j / N, v = fn(x);
+    pts.push([x, v]); if (v < yMin) yMin = v; if (v > yMax) yMax = v;
+  }
+  if (yMax - yMin < 1) { yMax += 1; yMin -= 1; }
+  var ys = niceStep((yMax - yMin) / 4), y0 = Math.floor(yMin / ys) * ys, y1 = Math.ceil(yMax / ys) * ys;
+  function X(r){ return m.l + iw * r / xMax; }
+  function Y(v){ return m.t + ih * (1 - (v - y0) / (y1 - y0)); }
+  var out = '', k, K = Math.round((y1 - y0) / ys);
+  for (k = 0; k <= K; k++) {
+    var tv = y0 + k * ys, yy = Y(tv);
+    out += '<line class="grid" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + yy.toFixed(1) + '" y2="' + yy.toFixed(1) + '"/>';
+    out += '<text class="tick" x="' + (m.l - 8) + '" y="' + (yy + 4).toFixed(1) + '" text-anchor="end">' + shortSigned(Math.abs(tv) < ys / 1e6 ? 0 : tv) + '</text>';
+  }
+  var KX = Math.round(xMax / xs);
+  for (k = 0; k <= KX; k++) {
+    var xr = k * xs;
+    out += '<text class="tick" x="' + X(xr).toFixed(1) + '" y="' + (H - m.b + 17) + '" text-anchor="middle">' + String(Math.round(xr * 1000) / 10) + '%</text>';
+  }
+  out += '<text class="axis-cap" x="' + (m.l + iw / 2) + '" y="' + (H - 3) + '" text-anchor="middle">' + o.xCap + '</text>';
+  var yZ = Y(0);
+  var curve = 'M' + pts.map(function(p){ return X(p[0]).toFixed(1) + ',' + Y(p[1]).toFixed(1); }).join(' L');
+  var area = curve + ' L' + X(xMax).toFixed(1) + ',' + yZ.toFixed(1) + ' L' + X(0).toFixed(1) + ',' + yZ.toFixed(1) + ' Z';
+  out += '<defs><clipPath id="' + id + 'Pos"><rect x="' + m.l + '" y="' + m.t + '" width="' + iw + '" height="' + Math.max(0, yZ - m.t).toFixed(1) + '"/></clipPath>' +
+         '<clipPath id="' + id + 'Neg"><rect x="' + m.l + '" y="' + yZ.toFixed(1) + '" width="' + iw + '" height="' + Math.max(0, m.t + ih - yZ).toFixed(1) + '"/></clipPath></defs>';
+  out += '<path class="area-pos" clip-path="url(#' + id + 'Pos)" d="' + area + '"/><path class="area-neg" clip-path="url(#' + id + 'Neg)" d="' + area + '"/>';
+  out += '<line class="zero" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + yZ.toFixed(1) + '" y2="' + yZ.toFixed(1) + '"/>';
+  out += '<path class="npv" d="' + curve + '"/>';
+  var same = isFinite(irr) && Math.abs(irr - q) < 5e-5;
+  if (!same) {
+    var vq = fn(q), qx = X(q), qy = Y(vq);
+    out += '<circle class="mk-q" cx="' + qx.toFixed(1) + '" cy="' + qy.toFixed(1) + '" r="6"/>';
+    out += '<text class="mk-label" x="' + (qx + 10).toFixed(1) + '" y="' + (qy - 10).toFixed(1) + '" text-anchor="start">' + o.qName + ' ' + pct(q, 2) + '</text>';
+  }
+  if (isFinite(irr)) {
+    var ix = X(irr), label = same ? o.sameText + ', ' + pct(irr, 2) : o.irrName + ' ' + pct(irr, 2);
+    var lw = label.length * 7, left = ix - 10 - lw > m.l;
+    out += '<line class="guide" x1="' + ix.toFixed(1) + '" x2="' + ix.toFixed(1) + '" y1="' + m.t + '" y2="' + (m.t + ih) + '"/>';
+    out += '<circle class="mk-irr" cx="' + ix.toFixed(1) + '" cy="' + yZ.toFixed(1) + '" r="6.5"/>';
+    out += '<text class="mk-label" x="' + (left ? ix - 10 : ix + 10).toFixed(1) + '" y="' + (yZ + 20).toFixed(1) + '" text-anchor="' + (left ? 'end' : 'start') + '">' + label + '</text>';
+  }
+  out += '<line id="' + id + 'Cur" class="cursor" x1="0" x2="0" y1="' + m.t + '" y2="' + (m.t + ih) + '" style="display:none"/>';
+  out += '<circle id="' + id + 'Dot" class="cur-dot" r="4.5" cx="0" cy="0" style="display:none"/>';
+  out += '<rect class="hit" x="' + m.l + '" y="' + m.t + '" width="' + iw + '" height="' + ih + '"/>';
+  box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + o.aria + '">' + out + '</svg>';
+  geo[id] = {m:m, iw:iw, W:W, xMax:xMax, Y:Y, fn:fn, tip:tipId};
+  hideNpvTip(id);
+}
+function hideNpvTip(id){
+  var g = geo[id]; if (!g) return;
+  $(g.tip).hidden = true;
+  var c = $(id + 'Cur'), d = $(id + 'Dot');
+  if (c) c.style.display = 'none';
+  if (d) d.style.display = 'none';
+}
+function npvPointer(id, e){
+  var g = geo[id], svg = $(id).querySelector('svg');
+  if (!svg || !g) return;
+  var rect = svg.getBoundingClientRect();
+  var x = (e.clientX - rect.left) * g.W / rect.width;
+  if (x < g.m.l || x > g.m.l + g.iw) { hideNpvTip(id); return; }
+  var rate = (x - g.m.l) / g.iw * g.xMax, v = g.fn(rate);
+  var c = $(id + 'Cur'), d = $(id + 'Dot');
+  c.setAttribute('x1', x); c.setAttribute('x2', x); c.style.display = '';
+  d.setAttribute('cx', x); d.setAttribute('cy', g.Y(v)); d.style.display = '';
+  var tip = $(g.tip);
+  tip.innerHTML = '<strong>Discounted at ' + pct(rate, 2) + ' a year</strong><div><span>NPV</span>' + moneySigned(v) + '</div>' +
+    '<div><span>' + (v >= 0 ? 'Lender earns more than this rate' : 'Lender earns less than this rate') + '</span></div>';
+  tip.hidden = false;
+  placeTip(id, tip, e);
+}
+function attachNpvChart(id, redraw){
+  $(id).addEventListener('pointermove', function(e){ npvPointer(id, e); });
+  $(id).addEventListener('pointerdown', function(e){ npvPointer(id, e); });
+  $(id).addEventListener('pointerleave', function(){ hideNpvTip(id); });
+  watchWidth(id, redraw);
+}
+
+/* ---------- single-loan charts ---------- */
+function drawChart(res){
+  var perPeriod = res.rows.length <= 36;
+  var buckets = perPeriod
+    ? res.rows.map(function(r){ return {label:String(r.i), p:r.principal, int:r.interest, close:r.close, title:'Payment ' + r.i + ', ' + F.date.format(r.date),
+        rows:[['Principal repaid', r.principal], ['Interest paid', r.interest], ['Balance after', r.close]]}; })
+    : yearGroups(res).map(function(g){ return {label:String(g.y), p:g.principal, int:g.interest, close:g.close, title:'Year ' + g.y + ' (' + F.month.format(g.first) + ' to ' + F.month.format(g.last) + ')',
+        rows:[['Principal repaid', g.principal], ['Interest paid', g.interest], ['Balance after', g.close]]}; });
+  $('chartNote').textContent = perPeriod ? 'Each bar is one payment, split into principal and interest.' : 'Each bar is one loan year of payments, split into principal and interest.';
+  var aria = 'Chart of principal and interest per ' + (perPeriod ? 'payment' : 'year') + ' with the outstanding balance falling from ' + F.m0.format(res.P) + ' to zero.';
+  drawBarChart('chart', 'tip', buckets, res.P, perPeriod ? 'Payment number' : 'Loan year', aria);
+}
+attachBarChart('chart', function(){ if (current) drawChart(current); });
+
+function drawNPV(res){
+  drawNpvChart('npv', 'npvTip', function(x){ return npvAt(res, x / res.ppy); }, res.irrNom, state.rate / 100, {
+    irrName:'IRR', qName:'Quoted', sameText:'IRR = quoted rate', xCap:'Discount rate, a year',
+    aria:'Net present value falls as the discount rate rises and crosses zero at the IRR of ' + pct(res.irrNom, 2) + ' a year.'
+  });
+}
+attachNpvChart('npv', function(){ if (current) drawNPV(current); });
+
+/* ---------- table ---------- */
+function renderTable(res){
+  var t = $('table'), n2 = F.n2, html;
+  var f = FREQ[state.freq];
+  $('schedNote').textContent = view === 'irr'
+    ? 'Amounts in ' + state.currency + '. The lender\u2019s cash flows discounted at the IRR of ' + pct(res.irrP, 4) + ' per ' + f.per + '. The present values add up to zero, which is what defines the IRR.'
+    : 'Amounts in ' + state.currency + '. ' + res.n + ' ' + f.noun + ' payment' + (res.n === 1 ? '' : 's') + ' from ' + F.date.format(res.rows[0].date) + ' to ' + F.date.format(res.last.date) + '.';
+  if (view === 'period') {
+    html = '<thead><tr><th scope="col">No.</th><th scope="col" class="l">Date</th><th scope="col">Opening balance</th><th scope="col">Installment</th><th scope="col">Interest</th><th scope="col">Principal</th><th scope="col">Closing balance</th><th scope="col">Cumulative interest</th></tr></thead><tbody>';
+    html += res.rows.map(function(r){
+      return '<tr><td>' + r.i + '</td><td class="l">' + F.date.format(r.date) + '</td><td>' + n2.format(r.open) + '</td><td>' + n2.format(r.pay) + '</td><td>' + n2.format(r.interest) + '</td><td>' + n2.format(r.principal) + '</td><td>' + n2.format(r.close) + '</td><td>' + n2.format(r.cumI) + '</td></tr>';
+    }).join('');
+    html += '</tbody><tfoot><tr><th scope="row" class="l" colspan="3">Total</th><td>' + n2.format(res.totalPaid) + '</td><td>' + n2.format(res.totalInterest) + '</td><td>' + n2.format(res.P) + '</td><td></td><td></td></tr></tfoot>';
+  } else if (view === 'year') {
+    var g = yearGroups(res);
+    html = '<thead><tr><th scope="col">Loan year</th><th scope="col" class="l">Period</th><th scope="col">Payments</th><th scope="col">Paid</th><th scope="col">Interest</th><th scope="col">Principal</th><th scope="col">Closing balance</th></tr></thead><tbody>';
+    html += g.map(function(b){
+      var span = b.count > 1 ? F.month.format(b.first) + ' to ' + F.month.format(b.last) : F.month.format(b.first);
+      return '<tr><td>' + b.y + '</td><td class="l">' + span + '</td><td>' + b.count + '</td><td>' + n2.format(b.paid) + '</td><td>' + n2.format(b.interest) + '</td><td>' + n2.format(b.principal) + '</td><td>' + n2.format(b.close) + '</td></tr>';
+    }).join('');
+    html += '</tbody><tfoot><tr><th scope="row" class="l" colspan="2">Total</th><td>' + res.n + '</td><td>' + n2.format(res.totalPaid) + '</td><td>' + n2.format(res.totalInterest) + '</td><td>' + n2.format(res.P) + '</td><td></td></tr></tfoot>';
+  } else {
+    var ir = res.irrP, df = 1, cum = -res.net, sumCF = -res.net;
+    var z = function(v){ return Math.abs(v) < 0.005 ? 0 : v; };
+    html = '<thead><tr><th scope="col">No.</th><th scope="col" class="l">Date</th><th scope="col">Cash flow</th><th scope="col">Discount factor</th><th scope="col">Present value</th><th scope="col">Cumulative PV</th></tr></thead><tbody>';
+    html += '<tr><td>0</td><td class="l">' + F.date.format(res.disb) + ' (disbursed)</td><td>' + n2.format(-res.net) + '</td><td>1.000000</td><td>' + n2.format(-res.net) + '</td><td>' + n2.format(cum) + '</td></tr>';
+    html += res.rows.map(function(r){
+      df = df / (1 + ir); var pv = r.pay * df; cum += pv; sumCF += r.pay;
+      return '<tr><td>' + r.i + '</td><td class="l">' + F.date.format(r.date) + '</td><td>' + n2.format(r.pay) + '</td><td>' + df.toFixed(6) + '</td><td>' + n2.format(pv) + '</td><td>' + n2.format(z(cum)) + '</td></tr>';
+    }).join('');
+    html += '</tbody><tfoot><tr><th scope="row" class="l" colspan="2">Total</th><td>' + n2.format(sumCF) + '</td><td></td><td>' + n2.format(z(cum)) + '</td><td></td></tr></tfoot>';
+  }
+  t.innerHTML = html;
+}
+
+/* ---------- exports ---------- */
+function csvText(res){
+  var f = FREQ[state.freq], lines = [];
+  lines.push('Quick Calculator cash flow schedule');
+  lines.push('Principal,' + res.P.toFixed(2));
+  lines.push('Fixed annual interest rate (%),' + state.rate);
+  lines.push('Interest method,Fixed (flat) on original principal');
+  lines.push('Tenure,' + tenureText());
+  lines.push('Frequency,' + f.label);
+  lines.push('Currency,' + state.currency);
+  lines.push('Installment,' + res.emi.toFixed(2));
+  lines.push('Total interest,' + res.totalInterest.toFixed(2));
+  lines.push('Total repaid,' + res.totalPaid.toFixed(2));
+  lines.push('Upfront fees,' + res.fees.toFixed(2));
+  lines.push('Net amount disbursed,' + res.net.toFixed(2));
+  lines.push('IRR per ' + f.per + ' (%),' + (res.irrP * 100).toFixed(6));
+  lines.push('Annual IRR nominal (%),' + (res.irrNom * 100).toFixed(6));
+  lines.push('Annual IRR effective (%),' + (res.irrEff * 100).toFixed(6));
+  lines.push('XIRR (%),' + (res.xirr * 100).toFixed(6));
+  lines.push('');
+  lines.push('No.,Date,Opening balance,Installment,Interest,Principal,Closing balance,Cumulative interest');
+  res.rows.forEach(function(r){
+    lines.push([r.i, toISO(r.date), r.open.toFixed(2), r.pay.toFixed(2), r.interest.toFixed(2), r.principal.toFixed(2), r.close.toFixed(2), r.cumI.toFixed(2)].join(','));
+  });
+  lines.push('');
+  lines.push('IRR workings (lender cash flows discounted at the IRR per period)');
+  lines.push('No.,Date,Cash flow,Discount factor,Present value,Cumulative PV');
+  var df = 1, cum = -res.net;
+  lines.push(['0', toISO(res.disb), (-res.net).toFixed(2), '1.000000', (-res.net).toFixed(2), (-res.net).toFixed(2)].join(','));
+  res.rows.forEach(function(r){
+    df = df / (1 + res.irrP); var pv = r.pay * df; cum += pv;
+    lines.push([r.i, toISO(r.date), r.pay.toFixed(2), df.toFixed(6), pv.toFixed(2), (Math.abs(cum) < 0.005 ? 0 : cum).toFixed(2)].join(','));
+  });
+  return '\uFEFF' + lines.join('\r\n');
+}
+
+function reportHTML(res){
+  var f = FREQ[state.freq], n2 = F.n2, g = yearGroups(res);
+  var params = [
+    ['Principal', F.m2.format(res.P)], ['Fixed interest rate', state.rate + '% a year, flat on original principal'], ['Tenure', tenureText()],
+    ['Frequency', f.label], ['First payment', F.date.format(res.rows[0].date)], ['Currency', state.currency]
+  ];
+  var summary = [
+    ['Installment', F.m2.format(res.emi)], ['Number of payments', String(res.n)], ['Total interest', F.m2.format(res.totalInterest)],
+    ['Total repaid', F.m2.format(res.totalPaid)], ['Final payment', F.m2.format(res.last.pay) + ' on ' + F.date.format(res.last.date)]
+  ];
+  var irrRows = [
+    ['Upfront fees', F.m2.format(res.fees)], ['Net amount disbursed', F.m2.format(res.net)],
+    ['IRR per ' + f.per, pct(res.irrP, 4)], ['Annual IRR, nominal', pct(res.irrNom, 2)],
+    ['Annual IRR, effective', pct(res.irrEff, 2)], ['XIRR on actual dates', pct(res.xirr, 2)],
+    ['Total cost of credit', F.m2.format(res.totalInterest + res.fees)]
+  ];
+  var qd = state.rate / 100, rates = [0, qd / 2, qd, res.irrNom, qd * 1.5, qd * 2].filter(isFinite)
+    .map(function(v){ return Math.round(v * 1e8) / 1e8; })
+    .filter(function(v, i, a){ return a.indexOf(v) === i; }).sort(function(a, b){ return a - b; });
+  var npvRows = rates.map(function(rt){
+    var tag = Math.abs(rt - res.irrNom) < 1e-7 ? ' (IRR)' : (Math.abs(rt - qd) < 1e-7 ? ' (quoted)' : '');
+    return '<tr><td class="l">' + pct(rt, 2) + tag + '</td><td>' + moneySigned(npvAt(res, rt / res.ppy)) + '</td></tr>';
+  }).join('');
+  function kv(list){ return list.map(function(x){ return '<tr><th>' + x[0] + '</th><td>' + x[1] + '</td></tr>'; }).join(''); }
+  var yrs = g.map(function(b){
+    return '<tr><td>' + b.y + '</td><td class="l">' + F.month.format(b.first) + (b.count > 1 ? ' to ' + F.month.format(b.last) : '') + '</td><td>' + b.count + '</td><td>' + n2.format(b.paid) + '</td><td>' + n2.format(b.interest) + '</td><td>' + n2.format(b.principal) + '</td><td>' + n2.format(b.close) + '</td></tr>';
+  }).join('');
+  var sched = res.rows.map(function(r){
+    return '<tr><td>' + r.i + '</td><td class="l">' + F.date.format(r.date) + '</td><td>' + n2.format(r.open) + '</td><td>' + n2.format(r.pay) + '</td><td>' + n2.format(r.interest) + '</td><td>' + n2.format(r.principal) + '</td><td>' + n2.format(r.close) + '</td></tr>';
+  }).join('');
+  var css = 'body{font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1B2A4A;margin:32px auto;max-width:900px;padding:0 20px;font-size:14px;line-height:1.45}' +
+    'h1{font-family:Georgia,serif;font-size:28px;margin:0 0 4px}h2{font-family:Georgia,serif;font-size:18px;margin:28px 0 8px}' +
+    '.meta{color:#50607A;margin:0 0 20px}.lead{font-family:Georgia,serif;font-size:20px;margin:0 0 20px}' +
+    'table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{padding:6px 10px;border-bottom:1px solid #C5D4CF;text-align:right;white-space:nowrap}' +
+    '.kv th{text-align:left;font-weight:500;color:#50607A;width:40%}.kv td{text-align:left;font-weight:600}' +
+    'thead th{border-bottom:1.5px solid #1B2A4A;font-size:12px;color:#50607A}.l{text-align:left}' +
+    '.grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}@media(max-width:640px){.grid{grid-template-columns:1fr}}' +
+    '.note{color:#50607A;font-size:12px;margin-top:18px}@media print{body{margin:0}}';
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Quick Calculator report</title><style>' + css + '</style></head><body>' +
+    '<h1>Quick Calculator report</h1><p class="meta">Prepared ' + F.date.format(new Date()) + '. Amounts in ' + state.currency + '.</p>' +
+    '<p class="lead">' + (res.n === 1 ? 'One payment of ' + F.m2.format(res.last.pay) + ' on ' + F.date.format(res.last.date) + '.' : F.m2.format(res.emi) + ' ' + f.every + ', ' + res.n + ' times.') + '</p>' +
+    '<div class="grid"><div><h2>Inputs</h2><table class="kv">' + kv(params) + '</table></div><div><h2>Summary</h2><table class="kv">' + kv(summary) + '</table></div></div>' +
+    '<div class="grid"><div><h2>Internal rate of return</h2><table class="kv">' + kv(irrRows) + '</table></div>' +
+    '<div><h2>NPV at different discount rates</h2><table><thead><tr><th class="l">Discount rate, a year</th><th>NPV (lender\u2019s side)</th></tr></thead><tbody>' + npvRows + '</tbody></table></div></div>' +
+    '<h2>Yearly summary</h2><table><thead><tr><th>Loan year</th><th class="l">Period</th><th>Payments</th><th>Paid</th><th>Interest</th><th>Principal</th><th>Closing balance</th></tr></thead><tbody>' + yrs + '</tbody></table>' +
+    '<h2>Cash flow schedule</h2><table><thead><tr><th>No.</th><th class="l">Date</th><th>Opening balance</th><th>Installment</th><th>Interest</th><th>Principal</th><th>Closing balance</th></tr></thead><tbody>' + sched + '</tbody></table>' +
+    '<p class="note">Interest is fixed: every period is charged the original principal times the annual rate divided by the number of payments a year, and it does not fall as principal is repaid. Principal is repaid in equal parts, amounts are rounded to two decimals, and the final payment absorbs any rounding difference. The IRR treats the net amount disbursed (principal less upfront fees) as paid out one period before the first installment; nominal annual IRR is the periodic IRR times payments a year, and XIRR uses actual days on a 365-day year.</p>' +
+    '</body></html>';
+}
+
+var downloadsNS = null;
+var statusTimers = {};
+function status(msg, id){ id = id || 'status'; var s = $(id); s.textContent = msg; clearTimeout(statusTimers[id]); statusTimers[id] = setTimeout(function(){ s.textContent = ''; }, 4000); }
+
+function saveFile(name, data, mime, sid){
+  var say = function(m){ status(m, sid); };
+  if (downloadsNS) {
+    var payload = typeof data === 'string' ? data : new Blob([data], {type:mime});
+    return downloadsNS.save({filename:name, data:payload}).then(function(){ say('Saved ' + name + '.'); }, function(e){
+      var code = e && e.code;
+      if (code === 'declined') return;
+      if (code === 'rate_limited') say('A save prompt is already open.');
+      else say('This file can\u2019t be saved from this view.');
+    });
+  }
+  try {
+    var blob = new Blob([data], {type:mime}), url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+    say('Downloaded ' + name + '.');
+  } catch(e){ say('This file can\u2019t be saved from this view.'); }
+  return Promise.resolve();
+}
+
+$('dlCsv').addEventListener('click', function(){ if (current) saveFile('quick-calculator-cash-flows.csv', csvText(current), 'text/csv;charset=utf-8'); });
+$('dlReport').addEventListener('click', function(){ if (current) saveFile('quick-calculator-report.html', reportHTML(current), 'text/html;charset=utf-8'); });
+$('printBtn').addEventListener('click', function(){ window.print(); });
+
+function showExports(on){ ['dlCsv', 'dlReport', 'pfDlXlsx', 'pfDlReport', 'dlTemplate'].forEach(function(id){ $(id).hidden = !on; }); }
+function initDownloads(){
+  // Standalone (e.g. GitHub Pages): browser downloads and printing work directly.
+  if (!framed) { showExports(true); $('printBtn').hidden = false; $('pfPrint').hidden = false; }
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('downloads').then(function(ns){
+      if (ns) { downloadsNS = ns; showExports(true); }
+    }, function(){});
+  }
+}
+
+var TEMPLATE_B64 = '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oS8gM322P73Ynw72p4P96WB/Otif0BeQmT7bn17sTwf708H+dLA/HexP6AvITJ/tTy/2p4P96WB/OtifDvYn9AVkps/2pxf708H+dLA/HexPB/sT+gIy02f704v96WB/OtifDvang/0JfQGZ6bP96cX+dLA/HexPB/vTwf6EvoDM9Nn+9GJ/OtifDvang/3pYH9CX0Bm+mx/erE/HexPB/vTwf50sD+hLyAzfbY/vdifDvang/3pYH862J/QF5CZPtufXuxPB/vTwf50sD8d7E/oC8hMn+1PL/ang/3pYH862J8O9if0BWSmz/anF/vTwf50sD8d7E8H+xP6AjLTZ/vTi/3pYH862J8O9qeD/Ql9AZnps/3pxf50sD8d7E8H+9PB/oS+gMz02f70Yn862J8O9qeD/elgf0JfQGb6bH96sT8d7E8H+9PB/nSwP6EvIDN9tj+92J8O9qeD/elgfzrYn9AXkJk+259e7E8H+9PB/nSwPx3sT+gLyEyf7U8v9qeD/elgfzrYnw72J/QFZKbP9qcX+9PB/nSwPx3sTwf7E/oCMtNn+9OL/elgfzrYnw72p4P9CX0Bmemz/enF/nSwPx3sTwf708H+hL6AzPTZ/vRifzrYnw72p4P96WB/Ql9AZvpsf3qxPx3sTwf708H+dLA/oS8gM322P73Ynw72p4P96WB/Otif0BeQmT7bn17sTwf708H+dLA/HexP6AvITJ/tTy/2p4P96WB/OtifDvYn9AVkps/2pxf708H+dLA/HexPB/sT+gIy02f704v96WB/OtifDvang/0JfQGZ6bP96cX+dLA/HexPB/vTwf6EvoDM9Nn+9GJ/OtifDvang/3pYH9CX0Bm+mx/erE/HexPB/vTwf50sD+hLyAzfbY/vdifDvang/3pYH862J/QF5CZPtufXuxPB/vTwf50sD8d7E/oC8hMn+1PL/ang/3pYH862J8O9if0BWSmz/anF/vTwf50sD8d7E8H+xP6AjLTZ/vTi/3pYH862J8O9qeD/Ql9AZnps/3pxf50sD8d7E8H+9PB/oS+gMz02f70Yn862J8O9qeD/elgf0JfQGb6bH96sT8d7E8H+9PB/nSwP6EvIDN9tj+92J8O9qeD/elgfzrYn9AXkJk+259e7E8H+9PB/nSwPx3sT+gLyEyf7U8v9qeD/elgfzrYnw72J/QF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';
+
+/* ---------- loan portfolio ---------- */
+var PF_KEY = 'quick-calculator:portfolio:v1', MODE_KEY = 'quick-calculator:mode';
+var pf = null, pfRes = null, pfView = 'loans', mode = 'single';
+var FIELD_NAMES = {principal:'Principal', rate:'Fixed Interest', tenure:'Tenure', freq:'Frequency', date:'First Payment Date', fee:'Upfront Fees'};
+
+function setMode(m){
+  mode = m;
+  $('singleView').hidden = m !== 'single';
+  $('portView').hidden = m !== 'portfolio';
+  $('mSingle').setAttribute('aria-pressed', m === 'single' ? 'true' : 'false');
+  $('mPort').setAttribute('aria-pressed', m === 'portfolio' ? 'true' : 'false');
+  $('mini').classList.toggle('show', m === 'single' && !!miniOn && !!current);
+  try { localStorage.setItem(MODE_KEY, m); } catch(e){}
+  if (m === 'portfolio') renderPortfolio();
+  else if (current) { drawChart(current); drawNPV(current); }
+}
+$('mSingle').addEventListener('click', function(){ setMode('single'); });
+$('mPort').addEventListener('click', function(){ setMode('portfolio'); });
+
+function pfMsg(text, isErr){ var s = $('pfStatus'); s.textContent = text || ''; s.classList.toggle('err', !!isErr); }
+
+/* --- reading cells --- */
+function cellText(c){ return c ? (c.text != null ? String(c.text) : (c.raw == null ? '' : String(c.raw))) : ''; }
+function isBlank(c){ return !c || cellText(c).trim() === ''; }
+function cleanNum(v){ return Math.round(v * 1e8) / 1e8; }
+function readNum(c){
+  if (isBlank(c)) return NaN;
+  if (typeof c.raw === 'number') return c.raw;
+  var t = cellText(c).replace(/rs\.?|inr/gi, '').replace(/[,\s\u20b9$\u20ac\u00a3%]/g, '');
+  return /^-?\d*\.?\d+(e-?\d+)?$/i.test(t) ? parseFloat(t) : NaN;
+}
+function readPct(c){
+  if (isBlank(c)) return NaN;
+  if (typeof c.raw === 'number') return cleanNum(c.pctFmt ? c.raw * 100 : c.raw);
+  return readNum(c);
+}
+var MON = {jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, sept:9, oct:10, nov:11, dec:12};
+function mkDate(y, m, d){
+  if (y < 100) y += 2000;
+  var dt = new Date(y, m - 1, d);
+  return (dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d) ? dt : null;
+}
+function monNum(s){ s = s.toLowerCase(); return MON[s.slice(0, 4)] || MON[s.slice(0, 3)] || 0; }
+function parseDateStr(s){
+  s = String(s || '').trim(); if (!s) return null;
+  var m;
+  if ((m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) return mkDate(+m[1], +m[2], +m[3]);
+  if ((m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/))) {
+    var a = +m[1], b = +m[2];
+    return (b > 12 && a <= 12) ? mkDate(+m[3], a, b) : mkDate(+m[3], b, a);   // day first (DD/MM/YYYY) unless impossible
+  }
+  if ((m = s.match(/^(\d{1,2})[-\/ .]([A-Za-z]{3,9})[-\/ .,]+(\d{2,4})$/))) { var mo = monNum(m[2]); return mo ? mkDate(+m[3], mo, +m[1]) : null; }
+  if ((m = s.match(/^([A-Za-z]{3,9})[-\/ .]+(\d{1,2}),?[-\/ .]+(\d{2,4})$/))) { var mo2 = monNum(m[1]); return mo2 ? mkDate(+m[3], mo2, +m[2]) : null; }
+  return null;
+}
+function fromSerial(n){
+  var d = new Date(Math.round((n - 25569) * 86400000));
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+function readDate(c){
+  if (isBlank(c)) return null;
+  if (c.date) return mkDate(c.date.y, c.date.m, c.date.d);
+  if (typeof c.raw === 'number' && c.raw > 20000 && c.raw < 80000) return fromSerial(c.raw);
+  return parseDateStr(cellText(c));
+}
+function parseFreq(t){
+  t = String(t || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!t) return null;
+  if (t.indexOf('month') === 0 || t === 'm' || t === '12' || t === 'pm') return 'monthly';
+  if (t.indexOf('quarter') === 0 || t.indexOf('qtr') === 0 || t === 'q' || t === '4') return 'quarterly';
+  if (t.indexOf('half') === 0 || t.indexOf('semi') === 0 || t.indexOf('biannual') === 0 || t === 'h' || t === 'hy' || t === '2') return 'halfyearly';
+  if (t.indexOf('year') === 0 || t.indexOf('annual') === 0 || t === 'y' || t === 'yr' || t === 'pa' || t === '1') return 'yearly';
+  return null;
+}
+
+/* --- header detection --- */
+var HDR = [
+  ['fee', /fee|charge/i],
+  ['rate', /interest|rate/i],
+  ['tenure', /tenure|term/i],
+  ['freq', /freq/i],
+  ['date', /date|first\s*pay/i],
+  ['principal', /principal|amount|loan\s*size|sanction/i],
+  ['id', /\bid\b|name|ref|loan|account/i]
+];
+function mapHeaders(cells){
+  var map = {}, units = {tenure:'years', fee:'pct'};
+  cells.forEach(function(c, j){
+    var t = cellText(c).trim();
+    if (!t) return;
+    for (var h = 0; h < HDR.length; h++) {
+      var key = HDR[h][0];
+      if (map[key] == null && HDR[h][1].test(t)) {
+        map[key] = j;
+        if (key === 'tenure' && /month/i.test(t)) units.tenure = 'months';
+        if (key === 'fee' && /amount|amt|flat|value|\brs\b|inr|\u20b9|\$|\u20ac|\u00a3/i.test(t)) units.fee = 'amt';
+        break;
+      }
+    }
+  });
+  var score = ['principal', 'rate', 'tenure', 'freq', 'date'].filter(function(k){ return map[k] != null; }).length;
+  return {map:map, units:units, score:score};
+}
+
+function parseLoanRow(get, units, rowNo){
+  var idc = get('id'), id = isBlank(idc) ? '' : cellText(idc).trim();
+  if (!id) id = 'Row ' + rowNo;
+  var errs = [];
+  var P = readNum(get('principal'));
+  var rate = readPct(get('rate'));
+  var ten = readNum(get('tenure'));
+  var fq = parseFreq(cellText(get('freq')));
+  var feeC = get('fee');
+  var fee = isBlank(feeC) ? 0 : (units.fee === 'amt' ? readNum(feeC) : readPct(feeC));
+  var dt = readDate(get('date'));
+  if (!(P > 0)) errs.push('principal must be a number above zero');
+  if (!(rate >= 0 && rate <= 100)) errs.push('fixed interest must be between 0% and 100%');
+  var months = units.tenure === 'months' ? ten : ten * 12;
+  if (!(months > 0)) errs.push('tenure must be above zero');
+  else if (months > 600) errs.push('tenure must be 50 years (600 months) or less');
+  if (!fq) errs.push('frequency must be Monthly, Quarterly, Half-yearly or Yearly');
+  if (!(fee >= 0)) errs.push('upfront fees must be zero or more');
+  if (!dt) errs.push('first payment date is missing or not a date');
+  var inputs = {principal:P, rate:rate, tenure:ten, unit:units.tenure, freq:fq || 'monthly', start:dt ? toISO(dt) : defaultStart(), fee:fee, feeUnit:units.fee};
+  if (!errs.length && feeAmount(inputs) >= P) errs.push('upfront fees must be less than the principal');
+  var err = errs.length ? errs.join('; ') : null;
+  if (err) err = err.charAt(0).toUpperCase() + err.slice(1) + '.';
+  return {id:id, row:rowNo, inputs:inputs, error:err};
+}
+
+function parseGrid(grid, name){
+  var hi = -1, H = null;
+  for (var i = 0; i < Math.min(grid.length, 15); i++) {
+    var h = mapHeaders(grid[i].cells);
+    if (h.score >= 4) { hi = i; H = h; break; }
+  }
+  if (hi < 0) return {error:'Couldn\u2019t find the column headers in ' + name + '. Start from the input template, or check the header row names Principal, Fixed Interest, Tenure, Frequency, Upfront Fees and First Payment Date.'};
+  var missing = ['principal', 'rate', 'tenure', 'freq', 'date'].filter(function(k){ return H.map[k] == null; });
+  if (missing.length) return {error:'The ' + FIELD_NAMES[missing[0]] + ' column is missing in ' + name + '.'};
+  var loans = [];
+  for (var r = hi + 1; r < grid.length && loans.length < 5000; r++) {
+    var cells = grid[r].cells;
+    var get = function(k){ return H.map[k] == null ? null : cells[H.map[k]]; };
+    if (['id', 'principal', 'rate', 'tenure', 'freq', 'fee', 'date'].every(function(k){ return isBlank(get(k)); })) continue;
+    loans.push(parseLoanRow(get, H.units, grid[r].r));
+  }
+  if (!loans.length) return {error:'No loans found below the header row in ' + name + '.'};
+  return {loans:loans};
+}
+
+function splitDelimited(line, d){
+  var out = [], cur = '', q = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (q) { if (ch === '"') { if (line[i+1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === d) { out.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+function textToGrid(text){
+  text = String(text).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  var first = text.split('\n')[0] || '';
+  var delim = first.indexOf('\t') >= 0 ? '\t' : (first.indexOf(';') >= 0 && first.indexOf(',') < 0 ? ';' : ',');
+  return text.split('\n').map(function(line, i){
+    return {r:i + 1, cells:splitDelimited(line, delim).map(function(t){ t = t.trim(); return t === '' ? null : {raw:t, text:t, pctFmt:false, date:null}; })};
+  });
+}
+function fromSheetCell(c){
+  var z = c.z ? String(c.z) : '';
+  var o = {raw:c.v, text:c.w != null ? String(c.w) : (c.v == null ? '' : String(c.v)), pctFmt:/%/.test(z), date:null};
+  if (c.t === 'd' && c.v instanceof Date) o.date = {y:c.v.getFullYear(), m:c.v.getMonth() + 1, d:c.v.getDate()};
+  else if (c.t === 'n' && z && window.XLSX && XLSX.SSF.is_date(z)) { var p = XLSX.SSF.parse_date_code(c.v); if (p) o.date = {y:p.y, m:p.m, d:p.d}; }
+  return o;
+}
+function sheetToGrid(ws){
+  if (!ws || !ws['!ref']) return [];
+  var R = XLSX.utils.decode_range(ws['!ref']), grid = [];
+  for (var r = R.s.r; r <= Math.min(R.e.r, R.s.r + 20000); r++) {
+    var row = [];
+    for (var c = R.s.c; c <= Math.min(R.e.c, R.s.c + 40); c++) {
+      var cell = ws[XLSX.utils.encode_cell({r:r, c:c})];
+      row.push(cell && cell.v != null ? fromSheetCell(cell) : null);
+    }
+    grid.push({r:r + 1, cells:row});
+  }
+  return grid;
+}
+
+function acceptLoans(loans, name){
+  pf = {file:name, loans:loans};
+  try { localStorage.setItem(PF_KEY, JSON.stringify(pf)); } catch(e){}
+  pfView = 'loans';
+  renderPortfolio();
+  var bad = loans.filter(function(l){ return l.error; }).length, good = loans.length - bad;
+  pfMsg(name + ': ' + good + ' loan' + (good === 1 ? '' : 's') + ' read' + (bad ? ', ' + bad + ' row' + (bad === 1 ? '' : 's') + ' skipped (reasons are in the loan table)' : '') + '.', good === 0);
+}
+function ingestGrid(grid, name){
+  var res = parseGrid(grid, name);
+  if (res.loans) acceptLoans(res.loans, name); else pfMsg(res.error, true);
+}
+function loadFile(file){
+  if (!file) return;
+  var name = file.name || 'spreadsheet', ext = (name.split('.').pop() || '').toLowerCase();
+  var rd = new FileReader();
+  rd.onerror = function(){ pfMsg('Couldn\u2019t read ' + name + '.', true); };
+  pfMsg('Reading ' + name + '\u2026');
+  if (ext === 'csv' || ext === 'txt' || ext === 'tsv') {
+    rd.onload = function(){ ingestGrid(textToGrid(rd.result), name); };
+    rd.readAsText(file);
+    return;
+  }
+  if (!window.XLSX) { pfMsg('The spreadsheet reader hasn\u2019t loaded, so ' + name + ' can\u2019t be opened here. Save it as CSV, or paste the rows instead.', true); return; }
+  rd.onload = function(){
+    try {
+      var wb = XLSX.read(new Uint8Array(rd.result), {type:'array', cellNF:true, cellDates:false});
+      var names = wb.SheetNames.slice(), li = -1;
+      names.forEach(function(n, i){ if (li < 0 && /loan/i.test(n)) li = i; });
+      if (li > 0) names.unshift(names.splice(li, 1)[0]);
+      var lastErr = null;
+      for (var i = 0; i < names.length; i++) {
+        var res = parseGrid(sheetToGrid(wb.Sheets[names[i]]), name);
+        if (res.loans) { acceptLoans(res.loans, name); return; }
+        if (!lastErr || i === 0) lastErr = res.error;
+      }
+      pfMsg(lastErr, true);
+    } catch(e){ pfMsg('Couldn\u2019t read ' + name + '. Check it is an Excel (.xlsx or .xls) or CSV file.', true); }
+  };
+  rd.readAsArrayBuffer(file);
+}
+(function(){
+  var drop = $('drop');
+  ['dragenter', 'dragover'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function(ev){ drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function(e){ var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) loadFile(f); });
+  $('pfFile').addEventListener('change', function(){ loadFile(this.files && this.files[0]); this.value = ''; });
+  $('pfPasteGo').addEventListener('click', function(){
+    var t = $('pfPaste').value;
+    if (!t.trim()) { pfMsg('Paste the header row and your loans first.', true); return; }
+    ingestGrid(textToGrid(t), 'Pasted rows');
+  });
+  $('pfClear').addEventListener('click', function(){
+    pf = null; pfRes = null;
+    try { localStorage.removeItem(PF_KEY); } catch(e){}
+    renderPortfolio(); pfMsg('');
+  });
+})();
+
+/* --- consolidation --- */
+function xnpvFlows(flows, x){
+  var d0 = flows[0].d, v = 0;
+  for (var i = 0; i < flows.length; i++) v += flows[i].cf / Math.pow(1 + x, (flows[i].d - d0) / 365);
+  return v;
+}
+function computePortfolio(loans){
+  var ok = [], bad = [];
+  loans.forEach(function(l, idx){
+    l.idx = idx;
+    if (l.error) { bad.push(l); return; }
+    l.res = compute(l.inputs);
+    ok.push(l);
+  });
+  var R = {ok:ok, bad:bad};
+  if (!ok.length) return R;
+  var T = {P:0, fees:0, net:0, interest:0, paid:0, payments:0};
+  var wr = 0, wt = 0, wx = 0, wxP = 0, dayMap = {}, prinDay = {}, monthMap = {}, first = null, last = null, lo = null, hi = null;
+  function mb(d){ var k = d.getFullYear() * 12 + d.getMonth(); return monthMap[k] || (monthMap[k] = {k:k, disb:0, gross:0, pay:0, int:0, prin:0}); }
+  ok.forEach(function(l){
+    var r = l.res;
+    T.P += r.P; T.fees += r.fees; T.net += r.net; T.interest += r.totalInterest; T.paid += r.totalPaid; T.payments += r.n;
+    wr += r.P * l.inputs.rate / 100; wt += r.P * (r.n / r.ppy);
+    if (isFinite(r.xirr)) {
+      wx += r.P * r.xirr; wxP += r.P;
+      if (!lo || r.xirr < lo.res.xirr) lo = l;
+      if (!hi || r.xirr > hi.res.xirr) hi = l;
+    }
+    var dd = dayNum(r.disb);
+    dayMap[dd] = (dayMap[dd] || 0) - r.net;
+    prinDay[dd] = (prinDay[dd] || 0) + r.P;
+    var b0 = mb(r.disb); b0.disb += r.net; b0.gross += r.P;
+    if (!first || r.disb < first) first = r.disb;
+    if (!last || r.last.date > last) last = r.last.date;
+    r.rows.forEach(function(row){
+      var d = dayNum(row.date);
+      dayMap[d] = (dayMap[d] || 0) + row.pay;
+      prinDay[d] = (prinDay[d] || 0) - row.principal;
+      var b = mb(row.date); b.pay += row.pay; b.int += row.interest; b.prin += row.principal;
+    });
+  });
+  var flows = Object.keys(dayMap).map(Number).sort(function(a, b){ return a - b; }).map(function(d){ return {d:d, cf:dayMap[d]}; });
+  var ks = Object.keys(monthMap).map(Number), k0 = Math.min.apply(null, ks), k1 = Math.max.apply(null, ks);
+  var months = [], out = 0, cum = 0, peak = 0;
+  for (var k = k0; k <= k1; k++) {
+    var b = monthMap[k] || {disb:0, gross:0, pay:0, int:0, prin:0};
+    out = round2(out + b.gross - b.prin); if (Math.abs(out) < 0.005) out = 0;
+    var net = round2(b.pay - b.disb); cum = round2(cum + net);
+    months.push({k:k, y:Math.floor(k / 12), m:k % 12, disb:round2(b.disb), pay:round2(b.pay), int:round2(b.int), prin:round2(b.prin), net:net, out:out, cum:cum});
+  }
+  var running = 0;
+  Object.keys(prinDay).map(Number).sort(function(a, b){ return a - b; }).forEach(function(d){ running += prinDay[d]; if (running > peak) peak = running; });
+  var years = [];
+  months.forEach(function(mo){
+    var y = years.length && years[years.length - 1].y === mo.y ? years[years.length - 1] : null;
+    if (!y) { y = {y:mo.y, disb:0, pay:0, int:0, prin:0, net:0}; years.push(y); }
+    y.disb = round2(y.disb + mo.disb); y.pay = round2(y.pay + mo.pay); y.int = round2(y.int + mo.int); y.prin = round2(y.prin + mo.prin);
+    y.net = round2(y.net + mo.net); y.out = mo.out; y.cum = mo.cum;
+  });
+  ['P', 'fees', 'net', 'interest', 'paid'].forEach(function(key){ T[key] = round2(T[key]); });
+  R.T = T; R.flows = flows; R.months = months; R.years = years; R.first = first; R.last = last; R.peak = round2(peak);
+  R.wRate = wr / T.P; R.wTenure = wt / T.P; R.wXirr = wxP ? wx / wxP : NaN; R.lo = lo; R.hi = hi;
+  R.xirr = solveRate(function(x){ return xnpvFlows(flows, x); });
+  R.xirrMonthly = isFinite(R.xirr) ? 12 * (Math.pow(1 + R.xirr, 1 / 12) - 1) : NaN;
+  return R;
+}
+
+/* --- rendering --- */
+function monthDate(mo){ return new Date(mo.y, mo.m, 1); }
+function tenureShort(inp){ return inp.tenure + (inp.unit === 'years' ? (inp.tenure === 1 ? ' year' : ' years') : (inp.tenure === 1 ? ' month' : ' months')); }
+function feeShort(l){ return l.inputs.feeUnit === 'pct' ? pct(l.inputs.fee / 100, 2) : F.m0.format(l.inputs.fee); }
+
+function renderPortfolio(){
+  var has = !!(pf && pf.loans && pf.loans.length);
+  $('pfClear').hidden = !has;
+  $('pfSchedule').hidden = !has;
+  if (!has) {
+    pfRes = null;
+    $('pfBody').hidden = true; $('pfEmpty').hidden = false;
+    $('pfEmptyLead').textContent = 'Upload a spreadsheet of loans to see consolidated cash flows, the portfolio IRR and a loan-by-loan breakdown.';
+    return;
+  }
+  pfRes = computePortfolio(pf.loans);
+  var any = pfRes.ok.length > 0;
+  $('pfBody').hidden = !any; $('pfEmpty').hidden = any;
+  if (!any) {
+    $('pfEmptyLead').textContent = 'None of the ' + pf.loans.length + ' rows in ' + pf.file + ' could be used. The loan table below lists why.';
+    pfView = 'loans';
+  } else {
+    renderPfStatement();
+    renderPfIRR();
+    if (mode === 'portfolio') { drawPfChart(); drawPfNPV(); }
+  }
+  renderPfTable();
+}
+
+function renderPfStatement(){
+  var R = pfRes, T = R.T, n = R.ok.length;
+  $('pfHero').innerHTML = '<span class="fill">' + n + ' loan' + (n === 1 ? '' : 's') + '</span> worth <span class="fill">' + F.m0.format(T.P) +
+    '</span> run at an XIRR of <span class="fill">' + pct(R.xirr, 2) + '</span> a year.';
+  $('pfSub').textContent = 'Together they repay ' + F.m0.format(T.paid) + ' in installments, of which ' + F.m0.format(T.interest) + ' is interest' +
+    (T.fees > 0 ? ', plus ' + F.m0.format(T.fees) + ' in upfront fees' : '') + '. Cash flows run from ' + F.month.format(R.first) + ' to ' + F.month.format(R.last) + '.' +
+    (R.bad.length ? ' ' + R.bad.length + ' row' + (R.bad.length === 1 ? ' was' : 's were') + ' skipped; the loan table shows why.' : '');
+  var pp = T.paid > 0 ? T.P / T.paid * 100 : 100, ip = 100 - pp;
+  $('pfSplitP').style.width = pp + '%';
+  $('pfSplitI').style.width = ip + '%';
+  $('pfSplitLegend').innerHTML = '<li><span class="sw p"></span>Principal ' + F.m0.format(T.P) + ' (' + pp.toFixed(1) + '%)</li>' +
+    '<li><span class="sw i"></span>Interest ' + F.m0.format(T.interest) + ' (' + ip.toFixed(1) + '%)</li>';
+  var figs = [
+    ['Loans', n + (R.bad.length ? ' (' + R.bad.length + ' skipped)' : '')],
+    ['Total principal', F.m0.format(T.P)],
+    ['Upfront fees', F.m0.format(T.fees)],
+    ['Net amount disbursed', F.m0.format(T.net)],
+    ['Total interest', F.m0.format(T.interest)],
+    ['Total installments', F.m0.format(T.paid)],
+    ['Weighted fixed rate', pct(R.wRate, 2)],
+    ['Weighted tenure', R.wTenure.toFixed(1) + ' years'],
+    ['Peak principal outstanding', F.m0.format(R.peak)]
+  ];
+  $('pfFigures').innerHTML = figs.map(function(x){ return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('');
+}
+
+function renderPfIRR(){
+  var R = pfRes, T = R.T;
+  var ratio = (R.wRate > 0 && isFinite(R.xirr) && R.xirr / R.wRate >= 1.05) ? ', about ' + (R.xirr / R.wRate).toFixed(1) + ' times the fixed rate' : '';
+  var range = (R.ok.length > 1 && R.lo && R.hi) ? ' Individual loans range from ' + pct(R.lo.res.xirr, 2) + ' (' + R.lo.id + ') to ' + pct(R.hi.res.xirr, 2) + ' (' + R.hi.id + ').' : '';
+  $('pfIrrLead').textContent = 'Charged at a principal-weighted fixed rate of ' + pct(R.wRate, 2) + ', the combined cash flows give an XIRR of ' + pct(R.xirr, 2) + ' a year' + ratio + '.' + range;
+  var figs = [
+    ['Portfolio XIRR', pct(R.xirr, 2)],
+    ['XIRR as a monthly nominal rate', pct(R.xirrMonthly, 2)],
+    ['Weighted average loan XIRR', pct(R.wXirr, 2)],
+    ['Lowest loan XIRR', R.lo ? pct(R.lo.res.xirr, 2) + ' (' + R.lo.id + ')' : 'n/a'],
+    ['Highest loan XIRR', R.hi ? pct(R.hi.res.xirr, 2) + ' (' + R.hi.id + ')' : 'n/a'],
+    ['Total cost of credit', F.m0.format(T.interest + T.fees)]
+  ];
+  $('pfIrrFigures').innerHTML = figs.map(function(x){ return '<div><dt>' + x[0] + '</dt><dd>' + x[1] + '</dd></div>'; }).join('');
+  $('pfIrrDef').textContent = 'The portfolio XIRR discounts every loan\u2019s cash flows on their actual dates (365-day year). Each loan\u2019s net disbursement (principal less upfront fees) goes out one period before its first payment, and installments come in on their due dates. XIRR is an effective annual rate; the monthly nominal figure restates it as a rate per month \u00d7 12. Because loans start at different times, the portfolio XIRR is not a simple average of the loan IRRs.';
+}
+
+function drawPfChart(){
+  var R = pfRes; if (!R || !R.ok.length) return;
+  var useM = R.months.length <= 48, src = useM ? R.months : R.years;
+  var buckets = src.map(function(b){
+    var rows = [['Principal repaid', b.prin], ['Interest', b.int]];
+    if (b.disb > 0) rows.push(['Net disbursed', b.disb]);
+    rows.push(['Principal outstanding after', b.out]);
+    return {label:useM ? F.mshort.format(monthDate(b)) : String(b.y), title:useM ? F.monthLong.format(monthDate(b)) : String(b.y), p:b.prin, int:b.int, close:b.out, rows:rows};
+  });
+  $('pfChartNote').textContent = 'Each bar is one ' + (useM ? 'month' : 'calendar year') + ' of installments across all loans, split into principal and interest. The line is principal outstanding, which steps up as loans are disbursed.';
+  var start = src[0].out + src[0].prin;
+  drawBarChart('pfChart', 'pfTip', buckets, start, useM ? 'Month' : 'Year', 'Consolidated installments by ' + (useM ? 'month' : 'year') + ' with principal outstanding.', useM ? 50 : 36);
+}
+attachBarChart('pfChart', function(){ if (pfRes && pfRes.ok.length && mode === 'portfolio') drawPfChart(); });
+
+function drawPfNPV(){
+  var R = pfRes; if (!R || !R.ok.length) return;
+  drawNpvChart('pfNpv', 'pfNpvTip', function(x){ return xnpvFlows(R.flows, x); }, R.xirr, R.wRate, {
+    irrName:'XIRR', qName:'Weighted fixed rate', sameText:'XIRR = weighted fixed rate', xCap:'Discount rate, a year (effective)',
+    aria:'Portfolio net present value against the discount rate, crossing zero at the XIRR of ' + pct(R.xirr, 2) + '.'
+  });
+}
+attachNpvChart('pfNpv', function(){ if (pfRes && pfRes.ok.length && mode === 'portfolio') drawPfNPV(); });
+
+$('pvLoans').addEventListener('click', function(){ setPfView('loans'); });
+$('pvMonth').addEventListener('click', function(){ setPfView('month'); });
+$('pvYear').addEventListener('click', function(){ setPfView('year'); });
+function setPfView(v){
+  pfView = v;
+  $('pvLoans').setAttribute('aria-pressed', v === 'loans' ? 'true' : 'false');
+  $('pvMonth').setAttribute('aria-pressed', v === 'month' ? 'true' : 'false');
+  $('pvYear').setAttribute('aria-pressed', v === 'year' ? 'true' : 'false');
+  renderPfTable();
+}
+
+function renderPfTable(){
+  var R = pfRes, t = $('pfTable'), n2 = F.n2, html;
+  if (!R) { t.innerHTML = ''; return; }
+  var hasOk = R.ok.length > 0;
+  if (!hasOk && pfView !== 'loans') pfView = 'loans';
+  $('pvMonth').disabled = !hasOk; $('pvYear').disabled = !hasOk;
+  $('pvLoans').setAttribute('aria-pressed', pfView === 'loans' ? 'true' : 'false');
+  $('pvMonth').setAttribute('aria-pressed', pfView === 'month' ? 'true' : 'false');
+  $('pvYear').setAttribute('aria-pressed', pfView === 'year' ? 'true' : 'false');
+  if (pfView === 'loans') {
+    $('pfSchedNote').textContent = 'Amounts in ' + state.currency + '. Select Open to load a loan into the single-loan calculator.';
+    html = '<thead><tr><th scope="col" class="l">Loan ID</th><th scope="col">Principal</th><th scope="col">Fixed rate</th><th scope="col">Tenure</th><th scope="col" class="l">Frequency</th><th scope="col">Upfront fees</th><th scope="col" class="l">First payment</th><th scope="col">Installment</th><th scope="col">Payments</th><th scope="col">Total interest</th><th scope="col">IRR, nominal</th><th scope="col">XIRR</th><th scope="col" class="l"><span class="sr">Actions</span></th></tr></thead><tbody>';
+    html += pf.loans.map(function(l){
+      if (l.error) return '<tr class="err"><td class="l">' + esc(l.id) + '</td><td class="l" colspan="12">Row ' + l.row + ' skipped: ' + esc(l.error) + '</td></tr>';
+      var r = l.res, inp = l.inputs;
+      return '<tr><td class="l">' + esc(l.id) + '</td><td>' + n2.format(r.P) + '</td><td>' + pct(inp.rate / 100, 2) + '</td><td>' + tenureShort(inp) + '</td><td class="l">' + FREQ[inp.freq].label +
+        '</td><td>' + (r.fees > 0 ? n2.format(r.fees) : '0.00') + '</td><td class="l">' + F.date.format(r.rows[0].date) + '</td><td>' + n2.format(r.emi) + '</td><td>' + r.n +
+        '</td><td>' + n2.format(r.totalInterest) + '</td><td>' + pct(r.irrNom, 2) + '</td><td>' + pct(r.xirr, 2) + '</td><td class="l"><button type="button" class="open" data-i="' + l.idx + '">Open</button></td></tr>';
+    }).join('');
+    if (hasOk) {
+      html += '</tbody><tfoot><tr><th scope="row" class="l">Total</th><td>' + n2.format(R.T.P) + '</td><td>' + pct(R.wRate, 2) + '</td><td>' + R.wTenure.toFixed(1) + ' years</td><td></td><td>' +
+        n2.format(R.T.fees) + '</td><td></td><td></td><td>' + R.T.payments + '</td><td>' + n2.format(R.T.interest) + '</td><td></td><td>' + pct(R.xirr, 2) + '</td><td></td></tr></tfoot>';
+    } else html += '</tbody>';
+  } else {
+    var byM = pfView === 'month', src = byM ? R.months : R.years;
+    $('pfSchedNote').textContent = 'Amounts in ' + state.currency + '. All loans combined by calendar ' + (byM ? 'month' : 'year') + '; disbursements are net of upfront fees.';
+    html = '<thead><tr><th scope="col" class="l">' + (byM ? 'Month' : 'Year') + '</th><th scope="col">Net disbursed</th><th scope="col">Installments</th><th scope="col">Interest</th><th scope="col">Principal</th><th scope="col">Net cash flow</th><th scope="col">Principal outstanding</th><th scope="col">Cumulative net cash flow</th></tr></thead><tbody>';
+    html += src.map(function(b){
+      return '<tr><td class="l">' + (byM ? F.month.format(monthDate(b)) : b.y) + '</td><td>' + n2.format(b.disb) + '</td><td>' + n2.format(b.pay) + '</td><td>' + n2.format(b.int) + '</td><td>' + n2.format(b.prin) +
+        '</td><td>' + n2.format(b.net) + '</td><td>' + n2.format(b.out) + '</td><td>' + n2.format(b.cum) + '</td></tr>';
+    }).join('');
+    html += '</tbody><tfoot><tr><th scope="row" class="l">Total</th><td>' + n2.format(R.T.net) + '</td><td>' + n2.format(R.T.paid) + '</td><td>' + n2.format(R.T.interest) + '</td><td>' + n2.format(R.T.P) +
+      '</td><td>' + n2.format(round2(R.T.paid - R.T.net)) + '</td><td></td><td></td></tr></tfoot>';
+  }
+  t.innerHTML = html;
+}
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]; }); }
+
+$('pfTable').addEventListener('click', function(e){
+  var b = e.target.closest && e.target.closest('button.open');
+  if (!b || !pf) return;
+  var l = pf.loans[+b.getAttribute('data-i')];
+  if (!l || l.error) return;
+  Object.assign(state, l.inputs);
+  applyStateToInputs();
+  setMode('single');
+  update();
+  window.scrollTo(0, 0);
+});
+
+/* --- portfolio exports --- */
+function excelSerial(d){ return dayNum(d) + 25569; }
+function pfWorkbook(){
+  var R = pfRes, T = R.T, wb = XLSX.utils.book_new();
+  function add(name, aoa, fmt){
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    var rg = XLSX.utils.decode_range(ws['!ref']);
+    for (var r = 1; r <= rg.e.r; r++) for (var c = 0; c <= rg.e.c; c++) {
+      var cell = ws[XLSX.utils.encode_cell({r:r, c:c})];
+      if (cell && cell.t === 'n') { var z = fmt(r, c); if (z) cell.z = z; }
+    }
+    ws['!cols'] = aoa[0].map(function(h){ return {wch:Math.max(12, String(h).length + 2)}; });
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  }
+  var M = '#,##0.00', P = '0.00%', D = 'dd-mmm-yyyy';
+  var sum = [['Metric', 'Value'],
+    ['Loans included', R.ok.length], ['Rows skipped', R.bad.length], ['Currency', state.currency],
+    ['Total principal', T.P], ['Upfront fees', T.fees], ['Net amount disbursed', T.net], ['Total interest', T.interest], ['Total installments', T.paid],
+    ['Total cost of credit', round2(T.interest + T.fees)], ['Peak principal outstanding', R.peak],
+    ['Weighted fixed rate', R.wRate], ['Weighted tenure (years)', Math.round(R.wTenure * 100) / 100],
+    ['Portfolio XIRR', R.xirr], ['XIRR as a monthly nominal rate', R.xirrMonthly], ['Weighted average loan XIRR', R.wXirr],
+    ['First disbursement', excelSerial(R.first)], ['Last payment', excelSerial(R.last)], ['Source file', pf.file]];
+  add('Summary', sum, function(r){ var k = sum[r][0]; return /rate|XIRR/.test(k) ? P : /disbursement$|payment$/.test(k) ? D : /Loans|Rows|tenure/.test(k) ? null : M; });
+  var loans = [['Loan ID', 'Row', 'Status', 'Principal', 'Fixed rate', 'Tenure', 'Tenure unit', 'Frequency', 'Upfront fees', 'Net disbursed', 'Disbursement date', 'First payment date', 'Last payment date', 'Installment', 'Payments', 'Total interest', 'Total repaid', 'IRR per period', 'Annual IRR, nominal', 'Annual IRR, effective', 'XIRR']];
+  pf.loans.forEach(function(l){
+    if (l.error) { loans.push([l.id, l.row, 'Skipped: ' + l.error]); return; }
+    var r = l.res, i = l.inputs;
+    loans.push([l.id, l.row, 'Included', r.P, i.rate / 100, i.tenure, i.unit, FREQ[i.freq].label, r.fees, r.net, excelSerial(r.disb), excelSerial(r.rows[0].date), excelSerial(r.last.date),
+      r.emi, r.n, r.totalInterest, r.totalPaid, r.irrP, r.irrNom, r.irrEff, r.xirr]);
+  });
+  add('Loans', loans, function(r, c){ return [4, 17, 18, 19, 20].indexOf(c) >= 0 ? P : [10, 11, 12].indexOf(c) >= 0 ? D : [3, 8, 9, 13, 15, 16].indexOf(c) >= 0 ? M : null; });
+  var head = ['Net disbursed', 'Installments', 'Interest', 'Principal', 'Net cash flow', 'Principal outstanding', 'Cumulative net cash flow'];
+  function rowOf(b){ return [b.disb, b.pay, b.int, b.prin, b.net, b.out, b.cum]; }
+  add('Monthly cash flows', [['Month'].concat(head)].concat(R.months.map(function(b){ return [excelSerial(monthDate(b))].concat(rowOf(b)); })), function(r, c){ return c === 0 ? 'mmm-yyyy' : M; });
+  add('Annual cash flows', [['Year'].concat(head)].concat(R.years.map(function(b){ return [String(b.y)].concat(rowOf(b)); })), function(){ return M; });
+  var cf = [['Loan ID', 'Date', 'Type', 'Cash flow', 'Interest', 'Principal', 'Loan principal outstanding']];
+  R.ok.forEach(function(l){
+    var r = l.res;
+    cf.push([l.id, excelSerial(r.disb), 'Disbursement (net of fees)', -r.net, 0, 0, r.P]);
+    r.rows.forEach(function(row){ cf.push([l.id, excelSerial(row.date), 'Installment ' + row.i, row.pay, row.interest, row.principal, row.close]); });
+  });
+  add('Cash flows by loan', cf, function(r, c){ return c === 1 ? D : c >= 3 ? M : null; });
+  return XLSX.write(wb, {bookType:'xlsx', type:'array'});
+}
+
+function pfReportHTML(){
+  var R = pfRes, T = R.T, n2 = F.n2;
+  function kv(list){ return list.map(function(x){ return '<tr><th>' + x[0] + '</th><td>' + x[1] + '</td></tr>'; }).join(''); }
+  var sumRows = [['Loans', R.ok.length + (R.bad.length ? ' (' + R.bad.length + ' skipped)' : '')], ['Total principal', F.m2.format(T.P)], ['Upfront fees', F.m2.format(T.fees)],
+    ['Net amount disbursed', F.m2.format(T.net)], ['Total interest', F.m2.format(T.interest)], ['Total installments', F.m2.format(T.paid)],
+    ['Weighted fixed rate', pct(R.wRate, 2)], ['Weighted tenure', R.wTenure.toFixed(1) + ' years'], ['Peak principal outstanding', F.m2.format(R.peak)],
+    ['Cash flows', F.month.format(R.first) + ' to ' + F.month.format(R.last)]];
+  var irrRows = [['Portfolio XIRR', pct(R.xirr, 2)], ['XIRR as a monthly nominal rate', pct(R.xirrMonthly, 2)], ['Weighted average loan XIRR', pct(R.wXirr, 2)],
+    ['Lowest loan XIRR', R.lo ? pct(R.lo.res.xirr, 2) + ' (' + esc(R.lo.id) + ')' : 'n/a'], ['Highest loan XIRR', R.hi ? pct(R.hi.res.xirr, 2) + ' (' + esc(R.hi.id) + ')' : 'n/a'],
+    ['Total cost of credit', F.m2.format(T.interest + T.fees)]];
+  var loanRows = pf.loans.map(function(l){
+    if (l.error) return '<tr><td class="l">' + esc(l.id) + '</td><td class="l" colspan="10">Row ' + l.row + ' skipped: ' + esc(l.error) + '</td></tr>';
+    var r = l.res, i = l.inputs;
+    return '<tr><td class="l">' + esc(l.id) + '</td><td>' + n2.format(r.P) + '</td><td>' + pct(i.rate / 100, 2) + '</td><td>' + tenureShort(i) + '</td><td class="l">' + FREQ[i.freq].label + '</td><td>' + n2.format(r.fees) +
+      '</td><td class="l">' + F.date.format(r.rows[0].date) + '</td><td>' + n2.format(r.emi) + '</td><td>' + n2.format(r.totalInterest) + '</td><td>' + pct(r.irrNom, 2) + '</td><td>' + pct(r.xirr, 2) + '</td></tr>';
+  }).join('');
+  var yrRows = R.years.map(function(b){
+    return '<tr><td class="l">' + b.y + '</td><td>' + n2.format(b.disb) + '</td><td>' + n2.format(b.pay) + '</td><td>' + n2.format(b.int) + '</td><td>' + n2.format(b.prin) + '</td><td>' + n2.format(b.net) + '</td><td>' + n2.format(b.out) + '</td></tr>';
+  }).join('');
+  var css = 'body{font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#1B2A4A;margin:32px auto;max-width:1000px;padding:0 20px;font-size:13px;line-height:1.45}' +
+    'h1{font-family:Georgia,serif;font-size:28px;margin:0 0 4px}h2{font-family:Georgia,serif;font-size:18px;margin:28px 0 8px}' +
+    '.meta{color:#50607A;margin:0 0 20px}.lead{font-family:Georgia,serif;font-size:20px;margin:0 0 20px}' +
+    'table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{padding:6px 8px;border-bottom:1px solid #C5D4CF;text-align:right;white-space:nowrap}' +
+    '.kv th{text-align:left;font-weight:500;color:#50607A;width:45%}.kv td{text-align:left;font-weight:600}' +
+    'thead th{border-bottom:1.5px solid #1B2A4A;font-size:11px;color:#50607A}.l{text-align:left}.wrap{overflow-x:auto}' +
+    '.grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}@media(max-width:640px){.grid{grid-template-columns:1fr}}' +
+    '.note{color:#50607A;font-size:12px;margin-top:18px}@media print{body{margin:0}}';
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Loan portfolio report</title><style>' + css + '</style></head><body>' +
+    '<h1>Loan portfolio report</h1><p class="meta">Prepared ' + F.date.format(new Date()) + ' from ' + esc(pf.file) + '. Amounts in ' + state.currency + '.</p>' +
+    '<p class="lead">' + R.ok.length + ' loan' + (R.ok.length === 1 ? '' : 's') + ' worth ' + F.m0.format(T.P) + ' run at an XIRR of ' + pct(R.xirr, 2) + ' a year.</p>' +
+    '<div class="grid"><div><h2>Consolidated summary</h2><table class="kv">' + kv(sumRows) + '</table></div><div><h2>Portfolio IRR</h2><table class="kv">' + kv(irrRows) + '</table></div></div>' +
+    '<h2>Loans</h2><div class="wrap"><table><thead><tr><th class="l">Loan ID</th><th>Principal</th><th>Fixed rate</th><th>Tenure</th><th class="l">Frequency</th><th>Upfront fees</th><th class="l">First payment</th><th>Installment</th><th>Total interest</th><th>IRR, nominal</th><th>XIRR</th></tr></thead><tbody>' + loanRows + '</tbody></table></div>' +
+    '<h2>Consolidated cash flows by year</h2><div class="wrap"><table><thead><tr><th class="l">Year</th><th>Net disbursed</th><th>Installments</th><th>Interest</th><th>Principal</th><th>Net cash flow</th><th>Principal outstanding</th></tr></thead><tbody>' + yrRows + '</tbody></table></div>' +
+    '<p class="note">Interest is fixed: each period is charged the original principal times the annual rate divided by the number of payments a year, and does not fall as principal is repaid. Each loan\u2019s net amount disbursed (principal less upfront fees) is treated as paid out one period before its first payment. The portfolio XIRR discounts all loans\u2019 cash flows on their actual dates using a 365-day year.</p>' +
+    '</body></html>';
+}
+
+$('pfDlXlsx').addEventListener('click', function(){
+  if (!pfRes || !pfRes.ok.length) return;
+  if (!window.XLSX) { status('The spreadsheet library hasn\u2019t loaded here. Use Download report instead.', 'pfSaveStatus'); return; }
+  saveFile('ashokcalc-portfolio.xlsx', pfWorkbook(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'pfSaveStatus');
+});
+$('pfDlReport').addEventListener('click', function(){ if (pfRes && pfRes.ok.length) saveFile('ashokcalc-portfolio-report.html', pfReportHTML(), 'text/html;charset=utf-8', 'pfSaveStatus'); });
+$('pfPrint').addEventListener('click', function(){ window.print(); });
+$('dlTemplate').addEventListener('click', function(){
+  var bin = atob(TEMPLATE_B64), bytes = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  saveFile('AshokCalc-Input-Template.xlsx', bytes.buffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'tplStatus');
+});
+
+/* ---------- decoration ---------- */
+function rosette(){
+  var n = 40, s = '';
+  for (var i = 0; i < n; i++) s += '<ellipse cx="100" cy="100" rx="94" ry="30" transform="rotate(' + (i * 180 / n).toFixed(2) + ' 100 100)"/>';
+  for (var j = 0; j < n; j++) s += '<ellipse cx="100" cy="100" rx="56" ry="18" transform="rotate(' + (j * 180 / n + 2.25).toFixed(2) + ' 100 100)"/>';
+  $('rosette').innerHTML = '<svg class="rosette" viewBox="0 0 200 200"><g fill="none" stroke="currentColor" stroke-width="0.45">' + s + '</g></svg>';
+}
+
+/* ---------- mobile summary bar ---------- */
+var miniOn = false;
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(function(es){
+    var e = es[0];
+    miniOn = !e.isIntersecting && e.boundingClientRect.top > 0;
+    $('mini').classList.toggle('show', miniOn && !!current && mode === 'single');
+  }).observe(document.querySelector('.statement'));
+}
+
+/* ---------- start ---------- */
+setFormatters();
+applyStateToInputs();
+rosette();
+update();
+initDownloads();
+try { pf = JSON.parse(localStorage.getItem(PF_KEY) || 'null'); } catch(e){ pf = null; }
+if (!(pf && pf.loans && pf.loans.length)) pf = null;
+var savedMode = null;
+try { savedMode = localStorage.getItem(MODE_KEY); } catch(e){}
+renderPortfolio();
+if (pf) pfMsg(pf.file + ': ' + pf.loans.filter(function(l){ return !l.error; }).length + ' loans loaded from your last visit.');
+setMode(savedMode === 'portfolio' ? 'portfolio' : 'single');
+})();
+</script>
+</body>
+</html>
